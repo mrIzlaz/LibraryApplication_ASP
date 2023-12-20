@@ -9,8 +9,17 @@ public class Author
     public int Id { get; set; }
     public string? Description { get; set; } = string.Empty;
     public Person? Person { get; set; }
+    public List<ISBN> Isbn { get; set; } = new();
 
-    public List<ISBN> Isbn { get; set; } = new List<ISBN>();
+    public override string? ToString()
+    {
+        if(Person != null)
+            return $"Name: {Person.FirstName} {Person.LastName}, Born: {Person.BirthDate}\n " +
+               $"Author Id: {Id}, Description: {Description}";
+        else
+            return base.ToString();
+    }
+    
 
 }
 

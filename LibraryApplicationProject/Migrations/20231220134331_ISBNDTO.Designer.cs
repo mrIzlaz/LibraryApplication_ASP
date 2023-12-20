@@ -4,6 +4,7 @@ using LibraryApplicationProject;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibraryApplicationProject.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    partial class LibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231220134331_ISBNDTO")]
+    partial class ISBNDTO
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,9 +102,6 @@ namespace LibraryApplicationProject.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(1200)");
 
-                    b.Property<long>("Isbn")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("ReleaseDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
@@ -113,9 +113,6 @@ namespace LibraryApplicationProject.Migrations
 
                     b.HasKey("Isbn_Id")
                         .HasName("PrimaryKey_ISBN");
-
-                    b.HasIndex("Isbn")
-                        .IsUnique();
 
                     b.ToTable("ISBNs", "library");
                 });

@@ -34,3 +34,36 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/*
+{
+     "id": 0,
+     "isbn": 9700765365293,
+     "title": "Oathbringer",
+     "description": "Ash and red lightning sweep the lands...",
+     "releaseDate": "2023-12-20T15:14:18.280Z",
+     "authorId": [
+       2
+     ],
+     "quantity": 5,
+     "isAvailable": true
+   }
+
+{
+     "id": 0,
+     "title": "The Gamification of learning and instruction",
+     "description": "Praise for The Gamification of Learning and Instruction",
+     "isbn": 9781118096345,
+     "releaseDate": "2023-12-20T15:50:25.281Z",
+     "quantity": 3,
+     "authors": [
+       {
+         "id": 0,
+         "firstName": "Karl",
+         "lastName": "M. Kapp",
+         "birthDate": "2023-12-20T15:50:25.281Z",
+         "description": "Writer of The Gamification of Learning and Instruction"
+       }
+     ]
+   }
+*/

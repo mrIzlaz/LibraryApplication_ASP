@@ -30,6 +30,8 @@ namespace LibraryApplicationProject.Data.Config
         public void Configure(EntityTypeBuilder<ISBN> builder)
         {
             builder.HasKey(i => i.Isbn_Id).HasName("PrimaryKey_ISBN");
+            builder.Property(i => i.Isbn).HasColumnType("bigint");
+            builder.HasIndex(i => i.Isbn).IsUnique();
             builder.Property(i => i.Isbn_Id).HasColumnType("bigint");
             builder.Property(i => i.Title).HasColumnType("varchar(128)");
             builder.Property(i => i.Description).HasColumnType("varchar(1200)");

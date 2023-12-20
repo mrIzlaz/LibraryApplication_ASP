@@ -35,6 +35,7 @@ namespace LibraryApplicationProject.Controllers
         {
             var membership = await _context.Memberships.Include(p => p.Person).FirstAsync(m => m.Id == id);
             if (membership == null) return NotFound();
+            if (membership.Person == null) return NotFound();
 
             var member = await _context.Persons.FindAsync(membership.Person.Id);
 
