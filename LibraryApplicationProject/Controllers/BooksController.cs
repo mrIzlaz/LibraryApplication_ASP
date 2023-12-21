@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -45,16 +46,34 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Books/5
         [HttpGet("{isbn}")]
-        public async Task<ActionResult<BookDTO>> GetBookByISBN(int isbn)
+        public async Task<ActionResult<BookSearchDTO>> GetBookByISBN(long isbn)
         {
             //var book = await _context.Books.FindAsync(id);
-            var books = await _context.Books.Include(book => book.Isbn).ToListAsync();
+            var books = await _context.Books
+                .Include(book => book.Isbn)
+                .Include(a => a.Isbn.Author)
+                .ThenInclude(a => a.Person)
+                .ToListAsync();
             var book = books.First(b => b.Isbn.Isbn == isbn);
             if (book == null)
             {
                 return NotFound();
             }
-            return book.ConvertToDto();
+            var dto = book.ConvertToDto();
+            var quantity = books.Count(b => b.Isbn.Isbn == isbn);
+            var available = books.Count(b => b.Isbn.Isbn == isbn && b.IsAvailable);
+            var result = new BookSearchDTO
+            {
+                Isbn = isbn,
+                Quantity = quantity,
+                Available = available,
+                Title = dto.Title,
+                Description = dto.Description,
+                ReleaseDate = dto.ReleaseDate,
+                Authors = dto.Authors,
+            };
+
+            return result;
         }
 
 

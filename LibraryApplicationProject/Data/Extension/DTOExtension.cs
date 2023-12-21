@@ -5,7 +5,7 @@ namespace LibraryApplicationProject.Data.Extension;
 
 public static class DTOExtension
 {
-    public static BookDTO? ConvertToDto(this Book book)
+    public static BookDTO ConvertToDto(this Book book)
     {
         if (book.Isbn == null)
             return null;
