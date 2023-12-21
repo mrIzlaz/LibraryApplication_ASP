@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
+using LibraryApplicationProject.Data.Extension;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -60,19 +61,10 @@ namespace LibraryApplicationProject.Controllers
 
             try
             {
-                var person = new Person
-                {
-                    LastName = membershipDto.LastName,
-                    FirstName = membershipDto.FirstName,
-                    BirthDate = membershipDto.BirthDate
-                };
-                membershipDto.RegistryDate = membershipDto.RegistryDate <= DateTime.Today ? DateTime.Now : membershipDto.RegistryDate;
-                Membership membership = new Membership
-                {
-                    RegistryDate = membershipDto.RegistryDate,
-                    ExpirationDate = membershipDto.ExpirationDate,
-                    Person = person
-                };
+                var tup = membershipDto.ConvertFromDto();
+
+                var person = tup.Item1;
+                var membership = tup.Item2;
 
                 if (MembershipExists(person))
                     return Conflict();

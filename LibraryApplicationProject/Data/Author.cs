@@ -13,13 +13,11 @@ public class Author
 
     public override string? ToString()
     {
-        if(Person != null)
-            return $"Name: {Person.FirstName} {Person.LastName}, Born: {Person.BirthDate}\n " +
-               $"Author Id: {Id}, Description: {Description}";
-        else
-            return base.ToString();
+
+        return $"{Person}\n Authors Id: {Id}, Description: {Description}, {Isbn.Aggregate(string.Empty, (s, i) => $"{i.Title}, {i.ReleaseDate.ToShortDateString()}, ISBN:{i.Isbn}")}";
+
     }
-    
+
 
 }
 

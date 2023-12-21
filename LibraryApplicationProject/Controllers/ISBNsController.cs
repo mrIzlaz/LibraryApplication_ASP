@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
+using LibraryApplicationProject.Data.Extension;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LibraryApplicationProject.Controllers
@@ -39,9 +40,9 @@ namespace LibraryApplicationProject.Controllers
             {
                 return NotFound();
             }
-            List<int> authList = new();
+            List<string?> authList = new();
             if (!ISBN.Author.IsNullOrEmpty())
-                authList = ISBN.Author.Select(a => a.Id).ToList();
+                authList = ISBN.Author.ConvertToStrings();
 
             var dto = new ISBNDTO()
             {
@@ -50,7 +51,7 @@ namespace LibraryApplicationProject.Controllers
                 Title = ISBN.Title,
                 Description = ISBN.Description,
                 ReleaseDate = ISBN.ReleaseDate,
-                AuthorId = authList
+                Authors = authList
             };
 
             return dto;
@@ -97,7 +98,7 @@ namespace LibraryApplicationProject.Controllers
 
             var authList = new List<Author>();
 
-            foreach (var i in DTO.AuthorId)
+            foreach (var i in DTO.Authors)
             {
                 var auth = await _context.Authors.FindAsync(i);
                 if (auth != null)

@@ -9,6 +9,7 @@ using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
 using Humanizer;
+using LibraryApplicationProject.Data.Extension;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -25,44 +26,73 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Books
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
+        public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks()
         {
-            return await _context.Books.ToListAsync();
+            List<BookDTO> getBooks = new List<BookDTO>();
+            var books = await _context.Books.Include(i => i.Isbn)
+                .Include(a => a.Isbn.Author)
+                .ThenInclude(a => a.Person)
+                .ToListAsync();
+
+            foreach (var book in books)
+            {
+                var dto = book.ConvertToDto();
+                getBooks.Add(dto);
+            }
+
+            return getBooks;
         }
 
         // GET: api/Books/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Book>> GetBook(int id)
+        [HttpGet("{isbn}")]
+        public async Task<ActionResult<BookDTO>> GetBookByISBN(int isbn)
         {
-            var book = await _context.Books.FindAsync(id);
-
+            //var book = await _context.Books.FindAsync(id);
+            var books = await _context.Books.Include(book => book.Isbn).ToListAsync();
+            var book = books.First(b => b.Isbn.Isbn == isbn);
             if (book == null)
             {
                 return NotFound();
             }
-
-            return book;
+            return book.ConvertToDto();
         }
+
 
         // PUT: api/Books/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBook(int id, Book book)
+        [HttpPut("{isbn}")]
+        public async Task<IActionResult> PutBook(int isbn, BookEntryDTO dto)
         {
-            if (id != book.Id)
+            if (isbn != dto.Isbn)
             {
                 return BadRequest();
             }
 
-            _context.Entry(book).State = EntityState.Modified;
-
             try
             {
+                var isbnVal = _context.ISBNs.Single(i => i.Isbn == isbn);
+                var book = dto.ConvertFromDto(isbnVal);
+
+                var diff = dto.Quantity - _context.Books.Count(b => b.Isbn.Isbn == isbn);
+
+                if (diff > 0)
+                {
+                    BookFactory(diff, isbnVal);
+
+                }
+                else if (diff < 0)
+                {
+                    //Remove diff
+                }
+
+
+                _context.Entry(book).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
             }
+
             catch (DbUpdateConcurrencyException)
             {
-                if (!BookExists(id))
+                if (!BookExistsISBN(isbn))
                 {
                     return NotFound();
                 }
@@ -71,6 +101,12 @@ namespace LibraryApplicationProject.Controllers
                     throw;
                 }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
 
             return NoContent();
         }
@@ -78,11 +114,11 @@ namespace LibraryApplicationProject.Controllers
         // POST: api/Books
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<BookDTO>> PostBook(BookDTO dto)
+        public async Task<ActionResult<BookEntryDTO>> PostBook(BookEntryDTO entryDto)
         {
             var authList = new List<Author>();
 
-            foreach (var i in dto.AuthorId)
+            foreach (var i in entryDto.Authors)
             {
                 var auth = await _context.Authors.FindAsync(i);
                 if (auth != null)
@@ -91,15 +127,15 @@ namespace LibraryApplicationProject.Controllers
 
             ISBN isbn = new ISBN()
             {
-                Isbn_Id = dto.Id,
-                Isbn = dto.Isbn,
-                Title = dto.Title,
-                Description = dto.Description,
-                ReleaseDate = dto.ReleaseDate,
+                Isbn_Id = entryDto.Id,
+                Isbn = entryDto.Isbn,
+                Title = entryDto.Title,
+                Description = entryDto.Description,
+                ReleaseDate = entryDto.ReleaseDate,
                 Author = authList,
             };
             Book book = new();
-            for (int i = 0; i < dto.Quantity; i++)
+            for (int i = 0; i < entryDto.Quantity; i++)
             {
                 book = new Book()
                 {
@@ -112,7 +148,7 @@ namespace LibraryApplicationProject.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction($"GetBook, quantity: {dto.Quantity}", new { id = dto.Id }, book);
+            return CreatedAtAction($"GetBook, quantity: {entryDto.Quantity}", new { id = entryDto.Id }, book);
         }
         [HttpPost("{dto}")]
         public async Task<ActionResult<AuthorBookDTO>> PostBookWithAuthor(AuthorBookDTO dto)
@@ -123,13 +159,13 @@ namespace LibraryApplicationProject.Controllers
             {
                 authList.Add(new Author
                 {
-                   Description = i.Description,
-                   Person = new Person
-                   {
-                       FirstName = i.FirstName,
-                       LastName = i.LastName,
-                       BirthDate = i.BirthDate
-                   },
+                    Description = i.Description,
+                    Person = new Person
+                    {
+                        FirstName = i.FirstName,
+                        LastName = i.LastName,
+                        BirthDate = i.BirthDate
+                    },
                 });
             }
 
@@ -142,18 +178,7 @@ namespace LibraryApplicationProject.Controllers
                 ReleaseDate = dto.ReleaseDate,
                 Author = authList,
             };
-            Book book = new();
-            for (int i = 0; i < dto.Quantity; i++)
-            {
-                book = new Book()
-                {
-                    IsAvailable = true,
-                    Isbn = isbn
-                };
-
-                _context.Books.Add(book);
-            }
-
+            var book = BookFactory(dto.Quantity, isbn);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction($"GetBook, quantity: {dto.Quantity}", new { id = dto.Id }, book);
@@ -179,5 +204,28 @@ namespace LibraryApplicationProject.Controllers
         {
             return _context.Books.Any(e => e.Id == id);
         }
+
+        private bool BookExistsISBN(int isbn)
+        {
+            return _context.Books.Any(e => e.Isbn.Isbn == isbn);
+        }
+
+        private Book BookFactory(int i, ISBN isbn)
+        {
+            Book book = new();
+            for (int ii = 0; ii < i; ii++)
+            {
+                book = new Book()
+                {
+                    IsAvailable = true,
+                    Isbn = isbn
+                };
+
+                _context.Books.Add(book);
+            }
+
+            return book;
+        }
+
     }
 }

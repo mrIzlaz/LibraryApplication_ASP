@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
+using LibraryApplicationProject.Data.Extension;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -24,9 +25,27 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Authors
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
+        public async Task<ActionResult<IEnumerable<AuthorDTORead>>> GetAuthors()
         {
-            return await _context.Authors.Include(person => person.Person).ToListAsync();
+            List<AuthorDTORead> authors = new List<AuthorDTORead>();
+            var list = await _context.Authors.Include(person => person.Person).Include(author => author.Isbn).ToListAsync();
+            foreach (var auth in list)
+            {
+                bool pNull = auth.Person == null;
+
+                var authorDto = new AuthorDTORead
+                {
+                    FirstName = pNull ? "" : auth.Person.FirstName,
+                    LastName = pNull ? "" : auth.Person.LastName,
+                    BirthDate = pNull ? DateTime.Today : auth.Person.BirthDate,
+                    Description = auth.Description,
+                    BooksList = auth.Isbn.Select(i => i.ToString()).ToList(),
+                };
+
+                authors.Add(authorDto);
+            }
+
+            return authors;
         }
 
         // GET: api/Authors/5
@@ -87,19 +106,13 @@ namespace LibraryApplicationProject.Controllers
         // POST: api/Authors
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Author>> PostAuthor(AuthorDTO authorDto)
+        public async Task<ActionResult<AuthorDTORead>> PostAuthor(AuthorDTORead authorDtoRead)
         {
-            var person = new Person
-            {
-                FirstName = authorDto.FirstName,
-                LastName = authorDto.LastName,
-                BirthDate = authorDto.BirthDate
-            };
-            var author = new Author
-            {
-                Description = authorDto.Description,
-                Person = person,
-            };
+            var tuple = authorDtoRead.ConvertFromDto();
+
+            var person = tuple.Item1;
+            var author = tuple.Item2;
+
             _context.Persons.Add(person);
             _context.Authors.Add(author);
             await _context.SaveChangesAsync();

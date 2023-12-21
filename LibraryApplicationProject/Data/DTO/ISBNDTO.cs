@@ -6,5 +6,5 @@ public class ISBNDTO
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
     public DateTime ReleaseDate { get; set; }
-    public List<int> AuthorId { get; set; } = new();
+    public List<string?> Authors { get; set; } = new();
 }

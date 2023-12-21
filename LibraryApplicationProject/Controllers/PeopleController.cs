@@ -9,6 +9,8 @@ using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using Microsoft.IdentityModel.Tokens;
 
+//TODO:MOVE COMPONENTS TO RESPECTIVE CONTROLLERS AND REMOVE THIS
+
 namespace LibraryApplicationProject.Controllers
 {
     [Route("api/[controller]")]

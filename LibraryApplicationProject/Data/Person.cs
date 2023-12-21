@@ -8,6 +8,6 @@ namespace LibraryApplicationProject.Data
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
-        
+        public override string ToString() => $"{FirstName} {LastName}";
     }
 }

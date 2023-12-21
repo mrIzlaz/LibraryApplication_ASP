@@ -8,6 +8,6 @@
         public long Isbn { get; set; }
         public DateTime ReleaseDate { get; set; }
         public int Quantity { get; set; }
-        public List<AuthorDTO> Authors { get; set; } = new();
+        public List<AuthorDTORead> Authors { get; set; } = new();
     }
 }
