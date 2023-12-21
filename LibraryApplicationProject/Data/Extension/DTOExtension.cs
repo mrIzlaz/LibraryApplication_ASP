@@ -65,6 +65,23 @@ public static class DTOExtension
         return (person, membership);
     }
 
+    public static LoanDTORead ConvertToDto(this Loan loan)
+    {
+        var books = new List<BookDTO>();
+        loan.Books.ForEach(x => books.Add(x.ConvertToDto()));
+
+        var dto = new LoanDTORead
+        {
+            Id = loan.Id,
+            MembershipCardNumber = loan.Membership.CardNumber,
+            FirstName = loan.Membership.Person.FirstName,
+            LastName = loan.Membership.Person.LastName,
+            StartDate = DateOnly.FromDateTime(loan.StartDate),
+            ReturnDate = DateOnly.FromDateTime(loan.EndDate),
+            Books = books,
+        };
+        return dto;
+    }
 
 
     #region Helpers

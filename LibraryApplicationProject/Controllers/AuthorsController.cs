@@ -32,7 +32,6 @@ namespace LibraryApplicationProject.Controllers
             foreach (var auth in list)
             {
                 bool pNull = auth.Person == null;
-
                 var authorDto = new AuthorDTORead
                 {
                     FirstName = pNull ? "" : auth.Person.FirstName,
