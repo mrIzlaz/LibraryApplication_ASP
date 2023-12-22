@@ -4,6 +4,7 @@ using LibraryApplicationProject;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibraryApplicationProject.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    partial class LibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231221151104_Loan")]
+    partial class Loan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -105,7 +108,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateTime>("ReleaseDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateTime(2023, 12, 22, 0, 0, 0, 0, DateTimeKind.Local));
+                        .HasDefaultValue(new DateTime(2023, 12, 21, 0, 0, 0, 0, DateTimeKind.Local));
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -131,7 +134,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateTime>("EndDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateTime(2023, 12, 22, 0, 0, 0, 0, DateTimeKind.Local));
+                        .HasDefaultValue(new DateTime(2023, 12, 21, 0, 0, 0, 0, DateTimeKind.Local));
 
                     b.Property<int?>("MembershipId")
                         .HasColumnType("int");
@@ -139,7 +142,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateTime>("StartDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateTime(2023, 12, 22, 0, 0, 0, 0, DateTimeKind.Local));
+                        .HasDefaultValue(new DateTime(2023, 12, 21, 0, 0, 0, 0, DateTimeKind.Local));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_LoanId");
@@ -169,7 +172,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateTime>("RegistryDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateTime(2023, 12, 22, 0, 0, 0, 0, DateTimeKind.Local));
+                        .HasDefaultValue(new DateTime(2023, 12, 21, 0, 0, 0, 0, DateTimeKind.Local));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_MembershipId");
@@ -193,7 +196,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateTime>("BirthDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateTime(2023, 12, 22, 0, 0, 0, 0, DateTimeKind.Local));
+                        .HasDefaultValue(new DateTime(2023, 12, 21, 0, 0, 0, 0, DateTimeKind.Local));
 
                     b.Property<string>("FirstName")
                         .IsRequired()

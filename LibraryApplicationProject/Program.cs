@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using LibraryApplicationProject;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,8 +12,23 @@ Console.WriteLine($"Connection String: {t} \n");
 
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+
+
+/*builder.Services.AddDbContext<LibraryDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("SQLDataString"))); // Local
+*/
+
+
 builder.Services.AddDbContext<LibraryDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("SQLDataString")));
+{
+    var connectionString = builder.Configuration.GetConnectionString("SQLDataString");//"AzureDbString"
+    var connBuilder = new SqlConnectionStringBuilder(connectionString)
+    {
+        Password = builder.Configuration["DbPassword"]
+    };
+    connectionString = connBuilder.ConnectionString;
+    opt.UseSqlServer(connectionString);
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

@@ -1,6 +1,9 @@
-@LibraryApplicationProject_HostAddress = http://localhost:5115
+@LibraryApplicationProject_HostAddress = https://localhost:7050
 
-GET {{LibraryApplicationProject_HostAddress}}/weatherforecast/
-Accept: application/json
+GET {{LibraryApplicationProject_HostAddress}}/api/loans
+
+###
+
+GET {{LibraryApplicationProject_HostAddress}}/api/isbns
 
 ###
