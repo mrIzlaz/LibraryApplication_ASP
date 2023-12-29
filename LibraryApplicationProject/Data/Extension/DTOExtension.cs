@@ -17,6 +17,20 @@ public static class DTOExtension
             Title = book.Isbn.Title,
             Description = book.Isbn.Description,
             ReleaseDate = book.Isbn.ReleaseDate,
+            Authors = book.Isbn.Author.ConvertToIds(),
+        };
+    }
+    public static BookSearchDTO ConvertToDtoRead(this Book book)
+    {
+        if (book.Isbn == null)
+            return null;
+        return new BookSearchDTO
+        {
+            Id = book.Id,
+            Isbn = book.Isbn.Isbn,
+            Title = book.Isbn.Title,
+            Description = book.Isbn.Description,
+            ReleaseDate = book.Isbn.ReleaseDate,
             Authors = book.Isbn.Author.ConvertToStrings(),
         };
     }
@@ -80,6 +94,27 @@ public static class DTOExtension
             ReturnDate = DateOnly.FromDateTime(loan.EndDate),
             Books = books,
         };
+        return dto;
+    }
+
+    public static ISBNDTOEntry ConvertToDto(this ISBN isbn)
+    {
+        var dto = new ISBNDTOEntry
+        {
+            Id = isbn.Isbn_Id,
+            Isbn = isbn.Isbn,
+            Title = isbn.Title,
+            Description = isbn.Description,
+            ReleaseDate = isbn.ReleaseDate,
+            Authors = isbn.Author.ConvertToIds(),
+        };
+
+        return dto;
+    }
+    public static ISBNDTOEntry ConvertToDto(this ISBN isbn, double avgRating)
+    {
+        var dto = isbn.ConvertToDto();
+        dto.AvgRating = avgRating;
         return dto;
     }
 

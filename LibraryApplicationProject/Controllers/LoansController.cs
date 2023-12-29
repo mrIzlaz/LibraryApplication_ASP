@@ -30,10 +30,9 @@ namespace LibraryApplicationProject.Controllers
         {
             return await _context.Loans
                 .Include(m => m.Membership.Person)
-                .Include(b => b.Books)
+                .Include(b => b.Books).ThenInclude(a => a.Isbn.Author).ThenInclude(p => p.Person)
                 .Select(x => x.ConvertToDto()).ToListAsync();
-            // .ThenInclude(a => a.Isbn.Author)
-            // .ThenInclude(p => p.Person)
+
 
         }
 
@@ -51,15 +50,65 @@ namespace LibraryApplicationProject.Controllers
             return loan;
         }
 
-        // PUT: api/Loans/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutLoan(int id, Loan loan)
+
+        [HttpPut("ReturnBook{bookId}")]
+        public async Task<ActionResult<LoanDTORead>> PutLoan(int bookId)
         {
+            var book = await _context.Books.FindAsync(bookId);
+            if (book == null)
+                return BadRequest();
+
+
+            var loan = await _context.Loans
+                .Include(loan => loan.Books)
+                .SingleAsync(l => l.IsActive && l.Books.Contains(book));
+
+            book.IsAvailable = true;
+            loan.IsActive = loan.Books.Any(b => !b.IsAvailable);
+
+            _context.Entry(loan).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!LoanExists(loan.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+
+
+        [HttpPut("CloseLoan")]
+        public async Task<ActionResult<LoanDTORead>> CloseLoan(int id)
+        {
+            var loan = await _context.Loans
+                .Include(l => l.Books)
+                .Include(l => l.Membership)
+                .Include(l => l.Membership.Person)
+                .SingleAsync(l => l.Id == id);
+
             if (id != loan.Id)
             {
                 return BadRequest();
             }
+
+            foreach (var bookId in loan.Books)
+            {
+                bookId.IsAvailable = true;
+            }
+
+            loan.IsActive = false;
 
             _context.Entry(loan).State = EntityState.Modified;
 
@@ -79,12 +128,14 @@ namespace LibraryApplicationProject.Controllers
                 }
             }
 
-            return NoContent();
+            var dto = loan.ConvertToDto();
+
+            return dto;
         }
 
         // POST: api/Loans
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
+        [HttpPost("LoanBooks")]
         public async Task<ActionResult<LoanDTORead>> PostLoan(LoanDTOEntry dtoEntry)
         {
             Loan loan;
@@ -94,10 +145,12 @@ namespace LibraryApplicationProject.Controllers
                     .Include(p => p.Person)
                     .Single(m => m.CardNumber == dtoEntry.MembershipCardNumber);
 
+                if (!member.IsStillValid(DateTime.Today))
+                    return Problem("Membership expired");
+
                 var books = new List<Book>();
                 if (dtoEntry.BookIds.IsNullOrEmpty())
                     return BadRequest("No books to loan");
-
 
                 var allBooks = await _context.Books
                     .Include(i => i.Isbn)
@@ -110,13 +163,15 @@ namespace LibraryApplicationProject.Controllers
                     if (!book.IsAvailable)
                         return Conflict($"bookId: {bookId} {book.Isbn.Title} is not Available");
                     books.Add(book);
+                    book.IsAvailable = false;
                 }
 
                 loan = new Loan
                 {
                     Membership = member,
-                    StartDate = dtoEntry.StartDate.ToDateTime(TimeOnly.MinValue),
+                    StartDate = DateTime.Today,
                     EndDate = dtoEntry.ReturnDate.ToDateTime(TimeOnly.MaxValue),
+                    IsActive = true,
                     Books = books,
 
                 };

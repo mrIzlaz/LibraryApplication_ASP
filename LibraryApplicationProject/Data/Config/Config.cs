@@ -57,6 +57,7 @@ namespace LibraryApplicationProject.Data.Config
             builder.HasKey(l => l.Id).HasName("PrimaryKey_LoanId");
             builder.Property(l => l.StartDate).HasColumnType("date").HasDefaultValue(DateTime.Today);
             builder.Property(l => l.EndDate).HasColumnType("date").HasDefaultValue(DateTime.Today);
+            builder.Property(l => l.IsActive).HasColumnType("bit").HasDefaultValue(0);
         }
     }
 
@@ -74,7 +75,7 @@ namespace LibraryApplicationProject.Data.Config
         public void Configure(EntityTypeBuilder<Rating> builder)
         {
             builder.HasKey(r => r.Id).HasName("PrimaryKey_RatingId");
-            builder.Property(r => r.ReaderRating).HasColumnType("tinyint").HasDefaultValue(2);
+            builder.Property(r => r.ReaderRating).HasColumnType("tinyint").HasDefaultValue(0);
         }
     }
 

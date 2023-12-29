@@ -11,6 +11,7 @@ using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
 using Humanizer;
 using LibraryApplicationProject.Data.Extension;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -27,9 +28,9 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Books
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks()
+        public async Task<ActionResult<IEnumerable<BookSearchDTO>>> GetBooks()
         {
-            List<BookDTO> getBooks = new List<BookDTO>();
+            List<BookSearchDTO> getBooks = new List<BookSearchDTO>();
             var books = await _context.Books.Include(i => i.Isbn)
                 .Include(a => a.Isbn.Author)
                 .ThenInclude(a => a.Person)
@@ -37,11 +38,28 @@ namespace LibraryApplicationProject.Controllers
 
             foreach (var book in books)
             {
-                var dto = book.ConvertToDto();
+                var dto = book.ConvertToDtoRead();
                 getBooks.Add(dto);
             }
 
             return getBooks;
+        }
+
+        private async Task<(int Quantity, int Available)> GetBookStock(long isbn)
+        {
+            var books = await _context.Books.Where(b => b.Isbn != null && b.Isbn.Isbn == isbn)
+                .Include(book => book.Isbn).ToListAsync();
+
+            var book = books.First(b => b.Isbn.Isbn == isbn);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            var dto = book.ConvertToDtoRead();
+            var quantity = books.Count(b => b.Isbn.Isbn == isbn);
+            var available = books.Count(b => b.Isbn.Isbn == isbn && b.IsAvailable);
+
+            return (1, 1);
         }
 
         // GET: api/Books/5
@@ -59,7 +77,7 @@ namespace LibraryApplicationProject.Controllers
             {
                 return NotFound();
             }
-            var dto = book.ConvertToDto();
+            var dto = book.ConvertToDtoRead();
             var quantity = books.Count(b => b.Isbn.Isbn == isbn);
             var available = books.Count(b => b.Isbn.Isbn == isbn && b.IsAvailable);
             var result = new BookSearchDTO

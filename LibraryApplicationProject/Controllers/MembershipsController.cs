@@ -53,6 +53,46 @@ namespace LibraryApplicationProject.Controllers
             return dto;
         }
 
+        [HttpPut]
+        public async Task<IActionResult> PutMembership(int id, MembershipDTO dto)
+        {
+            if (id != dto.Id)
+            {
+                return BadRequest();
+            }
+
+            var membership = await _context.Memberships.FindAsync(dto.Id);
+            if(membership == null) return NotFound("Membership not found");
+            
+            var tuple = dto.ConvertFromDto();
+
+            var person = await _context.Persons.FindAsync(tuple.Item1.Id);
+            if(person == null) return NotFound("Person not found");
+            person = tuple.Item1;
+
+            membership = tuple.Item2;
+            membership.Person = tuple.Item1;
+            _context.Entry(membership).State = EntityState.Modified;
+            _context.Entry(person).State = EntityState.Modified;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MembershipExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
         // POST: api/Memberships
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
