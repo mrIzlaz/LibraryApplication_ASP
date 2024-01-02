@@ -1,67 +1,103 @@
-﻿using LibraryApplicationProject.Controllers;
-using LibraryApplicationProject.Data;
-using System.Security.Cryptography;
+﻿using LibraryApplicationProject.Data;
+using Microsoft.AspNetCore.Authentication;
 using System.Text;
 
 namespace LibraryApplicationProject
 {
     public class DataFactory
     {
-        LibraryDbContext _context;
 
         List<string> _lastNames = new List<string>()
         {
             "Andersson", "Karlsson", "Rayden", "Russel", "Taylor", "Birdie", "Hitchcock", "Penn", "Bacon", "Smith",
-            "Kimi", "Clarkson", "Edelblomberg", "Booker", "Crook", "Smoker", "Webber", "Ramsey"
+            "Kimi", "Clarkson", "Edelblomberg", "Booker", "Crook", "Smoker", "Webber", "Ramsey","Lindroos","Råsberg","Edlund",
         };
         List<string> _firstNames = new List<string>()
         {
             "Margot", "Astrid", "Charles", "Sean", "Crow", "Welsh", "Tim", "Bob", "Clarence", "Eva", "Lena", "Thomas",
-            "Kent", "Sam", "Jonas", "Rikard", "Kalle", "Frank", "Tina", "Albert", "Robert", "Titti", "Hubertius"
+            "Kent", "Sam", "Jonas", "Rikard", "Kalle", "Frank", "Tina", "Albert", "Robert", "Titti", "Hubertius","Anna","Alex",
         };
 
-
-        public DataFactory(LibraryDbContext context)
+        public async Task CreateData(LibraryDbContext _context)
         {
-            _context = context;
-        }
+            Authors(_context, 5);
+            Memberships(_context, 5);
+            await _context.SaveChangesAsync();
 
-        private void CreateData()
-        {
-            Authors(5);
-            Memberships(5);
         }
 
 
-        private void Authors(int noAuthors)
+        private void Authors(LibraryDbContext _context, int noAuthors)
         {
             for (int i = 0; i < noAuthors; i++)
             {
+                var rnd = new Random();
+                var person = CreatePerson(_context);
                 var auth = new Author
                 {
-                    Person = CreatePerson(),
-                    Description = GenerateLoremIpsum(8),
+                    Person = person,
+                    Description = GenerateLoremIpsum(rnd.Next(2, 8)),
                 };
                 _context.Authors.Add(auth);
+
+                int writtenBooks = rnd.Next(3);
+                for (int j = 0; j < writtenBooks; j++)
+                {
+                    var copies = rnd.Next(8);
+                    var isbn = CreateISBN(_context, auth);
+                    CreateBooks(_context, isbn, copies);
+                }
             }
 
         }
 
-        private void Memberships(int noMembers)
+        private void Memberships(LibraryDbContext _context, int noMembers)
         {
             var rnd = new Random();
-            for(int i = 0;i < noMembers; i++)
+            for (int i = 0; i < noMembers; i++)
             {
+                var date = GenerateDate(GeneratedDateVariants.RegistryDate);
+                var person = CreatePerson(_context);
                 var member = new Membership
                 {
-                    Person = CreatePerson(),
-                    CardNumber = rnd.NextInt64(10000000, 9999999),
-                    //RegistryDate = GenerateDate(GeneratedDateVariants.RegistryDate),
+                    Person = person,
+                    CardNumber = rnd.NextInt64(10000000, 99999999),
+                    RegistryDate = date,
+                    ExpirationDate = date.AddYears(2),
                 };
+                _context.Memberships.Add(member);
             }
         }
 
-        private Person CreatePerson()
+        private ISBN CreateISBN(LibraryDbContext _context, Author author)
+        {
+            var rnd = new Random();
+            var reDate = author.Person.BirthDate.AddYears(rnd.Next(20, 55));
+            var isbn = new ISBN()
+            {
+                Isbn = rnd.NextInt64(11111111, 99999999),
+                Title = GenerateLoremIpsum(rnd.Next(1, 5)),
+                Description = GenerateLoremIpsum(rnd.Next(12, 50)),
+                ReleaseDate = reDate,
+            };
+            isbn.Author.Add(author);
+            author.Isbn.Add(isbn);
+            _context.ISBNs.Add(isbn);
+            return isbn;
+        }
+        private void CreateBooks(LibraryDbContext _context, ISBN isbn, int noBooks)
+        {
+            for (int i = 0; i < noBooks; i++)
+            {
+                _context.Books.Add(new Book()
+                {
+                    Isbn = isbn,
+                    IsAvailable = true,
+                });
+            }
+        }
+
+        private Person CreatePerson(LibraryDbContext _context)
         {
             var rnd = new Random();
             var person = new Person

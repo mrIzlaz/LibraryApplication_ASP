@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using LibraryApplicationProject;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Writers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,13 +29,26 @@ builder.Services.AddDbContext<LibraryDbContext>(opt =>
     };
     connectionString = connBuilder.ConnectionString;
     opt.UseSqlServer(connectionString);
+
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 var app = builder.Build();
+
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+    db.Database.EnsureDeleted();
+    db.Database.EnsureCreated();
+    DataFactory fact = new();
+    await fact.CreateData(db);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -43,6 +57,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
@@ -50,6 +66,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
 
 /*
 {

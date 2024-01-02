@@ -1,4 +1,5 @@
 ﻿using LibraryApplicationProject.Data.DTO;
+using System;
 namespace LibraryApplicationProject.Data.Extension;
 
 public static class DTOExtension
@@ -33,7 +34,7 @@ public static class DTOExtension
         };
     }
 
-    public static (Person, Author) ConvertFromDto(this AuthorDTORead dtoRead)
+    public static (Person, Author) ConvertFromDto(this AuthorDTOInsert dtoRead)
     {
         var person = new Person
         {
@@ -47,6 +48,21 @@ public static class DTOExtension
             Person = person,
         };
         return (person, author);
+    }
+
+    public static AuthorDTORead ConvertToDto(this Author author)
+    {
+        bool pNull = author.Person == null;
+        var authorDto = new AuthorDTORead
+        {
+            Id = author.Id,
+            FirstName = pNull ? "" : author.Person.FirstName,
+            LastName = pNull ? "" : author.Person.LastName,
+            BirthDate = pNull ? DateOnly.FromDateTime(DateTime.Today) : author.Person.BirthDate,
+            Description = author.Description,
+            BooksList = author.Isbn.Select(i => i.ToString()).ToList(),
+        };
+        return authorDto;
     }
 
     public static Book ConvertFromDto(this BookEntryDTO dto, ISBN isbn)

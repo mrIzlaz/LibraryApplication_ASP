@@ -23,41 +23,27 @@ namespace LibraryApplicationProject.Controllers
         {
             List<AuthorDTORead> authors = new List<AuthorDTORead>();
             var list = await _context.Authors.Include(person => person.Person).Include(author => author.Isbn).ToListAsync();
-            foreach (var auth in list)
-            {
-                bool pNull = auth.Person == null;
-                var authorDto = new AuthorDTORead
-                {
-                    FirstName = pNull ? "" : auth.Person.FirstName,
-                    LastName = pNull ? "" : auth.Person.LastName,
-                    BirthDate = pNull ? DateOnly.FromDateTime(DateTime.Today) : auth.Person.BirthDate,
-                    Description = auth.Description,
-                    BooksList = auth.Isbn.Select(i => i.ToString()).ToList(),
-                };
-
-                authors.Add(authorDto);
-            }
-
+            list.ForEach(a => authors.Add(a.ConvertToDto()));
             return authors;
         }
 
         // GET: api/Authors/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Author>> GetAuthor(int id)
+        public async Task<ActionResult<AuthorDTORead>> GetAuthor(int id)
         {
-            var author = await _context.Authors.FindAsync(id);
+            var author = await _context.Authors.Include(p => p.Person).Include(a => a.Isbn).FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
             {
                 return NotFound();
             }
 
-            return author;
+            return author.ConvertToDto();
         }
 
-        // PUT: api/Authors/5
+        // PUT: api/Authors/personauthor5/2
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{authorId}, {personId}")]
+        [HttpPut("setpersonasauthor{personId}/{authorId}")]
         public async Task<IActionResult> PutAuthor(int authorId, int personId)
         {
             if (!AuthorExists(authorId))
@@ -70,11 +56,7 @@ namespace LibraryApplicationProject.Controllers
 
             if (person == null || author == null)
                 return NotFound();
-
-
-
             author.Person = person;
-
             _context.Entry(author).State = EntityState.Modified;
 
             try
@@ -96,10 +78,10 @@ namespace LibraryApplicationProject.Controllers
             return NoContent();
         }
 
-        // POST: api/Authors
+        // POST: api/Authors/createauthor
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<AuthorDTORead>> PostAuthor(AuthorDTORead authorDtoRead)
+        [HttpPost("createauthor")]
+        public async Task<ActionResult<AuthorDTORead>> PostAuthor(AuthorDTOInsert authorDtoRead)
         {
             var tuple = authorDtoRead.ConvertFromDto();
 
@@ -110,10 +92,7 @@ namespace LibraryApplicationProject.Controllers
             _context.Authors.Add(author);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAuthor", new
-            {
-                id = author.Id
-            }, author);
+            return CreatedAtAction("GetAuthor", new { id = author.Id }, author);
         }
 
         // DELETE: api/Authors/5
