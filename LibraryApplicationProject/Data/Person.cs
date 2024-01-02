@@ -7,7 +7,7 @@ namespace LibraryApplicationProject.Data
         public int Id { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public DateTime BirthDate { get; set; }
+        public DateOnly BirthDate { get; set; }
         public override string ToString() => $"{FirstName} {LastName}";
     }
 }

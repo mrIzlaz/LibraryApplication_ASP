@@ -1,6 +1,4 @@
 ﻿using LibraryApplicationProject.Data.DTO;
-using Microsoft.CodeAnalysis.Operations;
-
 namespace LibraryApplicationProject.Data.Extension;
 
 public static class DTOExtension
@@ -68,7 +66,7 @@ public static class DTOExtension
             FirstName = dto.FirstName,
             BirthDate = dto.BirthDate
         };
-        dto.RegistryDate = dto.RegistryDate <= DateTime.Today ? DateTime.Now : dto.RegistryDate;
+        dto.RegistryDate = dto.RegistryDate <= DateOnly.FromDateTime(DateTime.Today) ? DateOnly.FromDateTime(DateTime.Today) : dto.RegistryDate;
         Membership membership = new Membership
         {
             CardNumber = dto.CardNumber,
@@ -90,11 +88,25 @@ public static class DTOExtension
             MembershipCardNumber = loan.Membership.CardNumber,
             FirstName = loan.Membership.Person.FirstName,
             LastName = loan.Membership.Person.LastName,
-            StartDate = DateOnly.FromDateTime(loan.StartDate),
-            ReturnDate = DateOnly.FromDateTime(loan.EndDate),
+            StartDate = loan.StartDate,
+            ReturnDate = loan.EndDate,
             Books = books,
         };
         return dto;
+    }
+
+    public static Loan ConvertFromDto(this LoanDTOEntry loanDtoEntry, Membership member, List<Book> books)
+    {
+
+        var loan = new Loan
+        {
+            Membership = member,
+            StartDate = DateOnly.FromDateTime(DateTime.Today),
+            EndDate = loanDtoEntry.ReturnDate,
+            IsActive = true,
+            Books = books,
+        };
+        return loan;
     }
 
     public static ISBNDTOEntry ConvertToDto(this ISBN isbn)

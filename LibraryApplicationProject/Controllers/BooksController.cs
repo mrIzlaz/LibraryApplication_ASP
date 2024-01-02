@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
-using Humanizer;
 using LibraryApplicationProject.Data.Extension;
-using static System.Reflection.Metadata.BlobBuilder;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -50,16 +42,16 @@ namespace LibraryApplicationProject.Controllers
             var books = await _context.Books.Where(b => b.Isbn != null && b.Isbn.Isbn == isbn)
                 .Include(book => book.Isbn).ToListAsync();
 
-            var book = books.First(b => b.Isbn.Isbn == isbn);
+            var book = books.First(b => b.Isbn != null && b.Isbn.Isbn == isbn);
             if (book == null)
             {
-                return NotFound();
+                return (0, 0);
             }
             var dto = book.ConvertToDtoRead();
-            var quantity = books.Count(b => b.Isbn.Isbn == isbn);
-            var available = books.Count(b => b.Isbn.Isbn == isbn && b.IsAvailable);
+            var quantity = books.Count(b => b.Isbn != null && b.Isbn.Isbn == isbn);
+            var available = books.Count(b => b.Isbn != null && b.Isbn.Isbn == isbn && b.IsAvailable);
 
-            return (1, 1);
+            return (quantity, available);
         }
 
         // GET: api/Books/5
@@ -78,13 +70,13 @@ namespace LibraryApplicationProject.Controllers
                 return NotFound();
             }
             var dto = book.ConvertToDtoRead();
-            var quantity = books.Count(b => b.Isbn.Isbn == isbn);
-            var available = books.Count(b => b.Isbn.Isbn == isbn && b.IsAvailable);
+
+            var tup = await GetBookByISBN(dto.Isbn);
             var result = new BookSearchDTO
             {
                 Isbn = isbn,
-                Quantity = quantity,
-                Available = available,
+                Quantity = tup.Value.Quantity,
+                Available = tup.Value.Available,
                 Title = dto.Title,
                 Description = dto.Description,
                 ReleaseDate = dto.ReleaseDate,
@@ -110,7 +102,7 @@ namespace LibraryApplicationProject.Controllers
                 var isbnVal = _context.ISBNs.Single(i => i.Isbn == isbn);
                 var book = dto.ConvertFromDto(isbnVal);
 
-                var diff = dto.Quantity - _context.Books.Count(b => b.Isbn.Isbn == isbn);
+                var diff = dto.Quantity - _context.Books.Count(b => b.Isbn != null && b.Isbn.Isbn == isbn);
 
                 if (diff > 0)
                 {
@@ -148,9 +140,9 @@ namespace LibraryApplicationProject.Controllers
             return NoContent();
         }
 
-        // POST: api/Books
+        // POST: api/Books/newbook
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
+        [HttpPost("newbook")]
         public async Task<ActionResult<BookEntryDTO>> PostBook(BookEntryDTO entryDto)
         {
             var authList = new List<Author>();
@@ -187,7 +179,8 @@ namespace LibraryApplicationProject.Controllers
 
             return CreatedAtAction($"GetBook, quantity: {entryDto.Quantity}", new { id = entryDto.Id }, book);
         }
-        [HttpPost("{dto}")]
+        // POST: api/Books/newbookandauthor
+        [HttpPost("newbookandauthor")]
         public async Task<ActionResult<AuthorBookDTO>> PostBookWithAuthor(AuthorBookDTO dto)
         {
             var authList = new List<Author>();
@@ -215,10 +208,10 @@ namespace LibraryApplicationProject.Controllers
                 ReleaseDate = dto.ReleaseDate,
                 Author = authList,
             };
-            var book = BookFactory(dto.Quantity, isbn);
+            var books = BookFactory(dto.Quantity, isbn);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction($"GetBook, quantity: {dto.Quantity}", new { id = dto.Id }, book);
+            return CreatedAtAction($"GetBook, quantity: {dto.Quantity}", new { id = dto.Id }, books);
         }
 
         // DELETE: api/Books/5
@@ -247,8 +240,9 @@ namespace LibraryApplicationProject.Controllers
             return _context.Books.Any(e => e.Isbn.Isbn == isbn);
         }
 
-        private Book BookFactory(int i, ISBN isbn)
+        private List<Book> BookFactory(int i, ISBN isbn)
         {
+            var list = new List<Book>();
             Book book = new();
             for (int ii = 0; ii < i; ii++)
             {
@@ -259,9 +253,10 @@ namespace LibraryApplicationProject.Controllers
                 };
 
                 _context.Books.Add(book);
+                list.Add(book);
             }
 
-            return book;
+            return list;
         }
 
     }

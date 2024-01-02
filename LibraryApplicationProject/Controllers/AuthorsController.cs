@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using LibraryApplicationProject;
-using LibraryApplicationProject.Data;
+﻿using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -36,7 +30,7 @@ namespace LibraryApplicationProject.Controllers
                 {
                     FirstName = pNull ? "" : auth.Person.FirstName,
                     LastName = pNull ? "" : auth.Person.LastName,
-                    BirthDate = pNull ? DateTime.Today : auth.Person.BirthDate,
+                    BirthDate = pNull ? DateOnly.FromDateTime(DateTime.Today) : auth.Person.BirthDate,
                     Description = auth.Description,
                     BooksList = auth.Isbn.Select(i => i.ToString()).ToList(),
                 };

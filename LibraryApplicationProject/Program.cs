@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var t = builder.Configuration.GetConnectionString("SQLDataString");
+var t = builder.Configuration.GetConnectionString("SQLDataString02");
 Console.WriteLine($"Connection String: {t} \n");
 // Add services to the container.
 
@@ -21,7 +21,7 @@ builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializ
 
 builder.Services.AddDbContext<LibraryDbContext>(opt =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SQLDataString");//"AzureDbString"
+    var connectionString = builder.Configuration.GetConnectionString("SQLDataString02");//"AzureDbString" || "SQLDataString"
     var connBuilder = new SqlConnectionStringBuilder(connectionString)
     {
         Password = builder.Configuration["DbPassword"]

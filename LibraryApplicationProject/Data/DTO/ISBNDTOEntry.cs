@@ -6,7 +6,7 @@ public class ISBNDTOEntry
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
     public double AvgRating { get; set; } = 0;
-    public DateTime ReleaseDate { get; set; }
+    public DateOnly ReleaseDate { get; set; }
     public List<int> Authors { get; set; } = new();
 }
 
@@ -17,7 +17,7 @@ public class ISBNDTORead
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
     public double AvgRating { get; set; } = 0;
-    public DateTime ReleaseDate { get; set; }
+    public DateOnly ReleaseDate { get; set; }
     public List<string?> Authors { get; set; } = new();
 }
 

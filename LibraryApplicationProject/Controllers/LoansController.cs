@@ -50,8 +50,9 @@ namespace LibraryApplicationProject.Controllers
             return loan;
         }
 
+        // PUT: api/Loans/returnbook/5
 
-        [HttpPut("ReturnBook{bookId}")]
+        [HttpPut("ReturnBook/{bookId}")]
         public async Task<ActionResult<LoanDTORead>> PutLoan(int bookId)
         {
             var book = await _context.Books.FindAsync(bookId);
@@ -88,8 +89,9 @@ namespace LibraryApplicationProject.Controllers
         }
 
 
+        // PUT: api/Loans/closeloan/5
 
-        [HttpPut("CloseLoan")]
+        [HttpPut("closeloan{id}")]
         public async Task<ActionResult<LoanDTORead>> CloseLoan(int id)
         {
             var loan = await _context.Loans
@@ -98,18 +100,9 @@ namespace LibraryApplicationProject.Controllers
                 .Include(l => l.Membership.Person)
                 .SingleAsync(l => l.Id == id);
 
-            if (id != loan.Id)
-            {
-                return BadRequest();
-            }
+            if (id != loan.Id) return BadRequest();
 
-            foreach (var bookId in loan.Books)
-            {
-                bookId.IsAvailable = true;
-            }
-
-            loan.IsActive = false;
-
+            loan.CloseLoan();
             _context.Entry(loan).State = EntityState.Modified;
 
             try
@@ -119,13 +112,9 @@ namespace LibraryApplicationProject.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!LoanExists(id))
-                {
                     return NotFound();
-                }
                 else
-                {
                     throw;
-                }
             }
 
             var dto = loan.ConvertToDto();
@@ -133,9 +122,9 @@ namespace LibraryApplicationProject.Controllers
             return dto;
         }
 
-        // POST: api/Loans
+        // POST: api/Loans/loanbooks
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("LoanBooks")]
+        [HttpPost("loanbooks")]
         public async Task<ActionResult<LoanDTORead>> PostLoan(LoanDTOEntry dtoEntry)
         {
             Loan loan;
@@ -145,10 +134,8 @@ namespace LibraryApplicationProject.Controllers
                     .Include(p => p.Person)
                     .Single(m => m.CardNumber == dtoEntry.MembershipCardNumber);
 
-                if (!member.IsStillValid(DateTime.Today))
+                if (!member.IsStillValid(DateOnly.FromDateTime(DateTime.Today)))
                     return Problem("Membership expired");
-
-                var books = new List<Book>();
                 if (dtoEntry.BookIds.IsNullOrEmpty())
                     return BadRequest("No books to loan");
 
@@ -157,6 +144,8 @@ namespace LibraryApplicationProject.Controllers
                     .Include(a => a.Isbn.Author)
                     .ThenInclude(p => p.Person)
                     .ToListAsync();
+
+                var books = new List<Book>();
                 foreach (var bookId in dtoEntry.BookIds)
                 {
                     var book = allBooks.Single(b => b.Id == bookId);
@@ -166,21 +155,14 @@ namespace LibraryApplicationProject.Controllers
                     book.IsAvailable = false;
                 }
 
-                loan = new Loan
-                {
-                    Membership = member,
-                    StartDate = DateTime.Today,
-                    EndDate = dtoEntry.ReturnDate.ToDateTime(TimeOnly.MaxValue),
-                    IsActive = true,
-                    Books = books,
-
-                };
+                loan = dtoEntry.ConvertFromDto(member, books);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
+            if (loan == null) return BadRequest("Error setting up Loan object");
             _context.Loans.Add(loan);
             await _context.SaveChangesAsync();
 
