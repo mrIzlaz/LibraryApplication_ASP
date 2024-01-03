@@ -23,33 +23,53 @@ namespace LibraryApplicationProject.Controllers
             _context = context;
         }
 
-        // GET: api/Ratings
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Rating>>> GetRating()
+        //GET: api/Ratings/getall
+        [HttpGet("getall")]
+        public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetAllRatings()
         {
-            return await _context.Rating.ToListAsync();
+            var rs = await _context.Rating
+                 .Include(p => p.Isbn)
+                 .Include(p => p.Isbn.Author)
+                 .ThenInclude(a => a.Person)
+                 .Include(p => p.Membership)
+                 .ToListAsync();
+            return rs.ConvertToSingleDtoList();
         }
 
-        // GET: api/Ratings/5
-        [HttpGet("{isbn}")]
-        public async Task<ActionResult<RatingDTORead>> GetRating(int isbn)
+        // GET: api/Ratings/searchwith/5
+        [HttpGet("searchwithmemberid{memberId}")]
+        public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetRatingByMember(int memberId)
+        {
+            List<SingleRatingDTORead> sList = new List<SingleRatingDTORead>();
+            var rating = await _context.Rating
+                .Include(p => p.Isbn)
+                .Include(i => i.Isbn.Author).Where(i => i.Membership.Id == memberId).ToListAsync();
+
+            rating.ForEach(r => sList.Add(r.ConvertToSingleDto()));
+
+            if (rating == null)
+            {
+                return NotFound();
+            }
+
+            return sList;
+        }
+
+
+        // GET: api/Ratings/getratingforbook/52423432
+        [HttpGet("getratingforbook{isbn}")]
+        public async Task<ActionResult<AggregateRatingDTORead>> GetRatingForBook(int isbn)
         {
             var rating = await _context.Rating
                 .Include(p => p.Isbn)
                 .Include(i => i.Isbn.Author).Where(i => i.Isbn.Isbn == isbn).ToListAsync();
-
-            var avg = rating.Average(p => p.ReaderRating);
-            var count = rating.Count();
-            var isbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto();
-
-
-            var dto = new RatingDTORead()
+            bool hasRating = rating.Count == 0;
+            var dto = new AggregateRatingDTORead()
             {
-                AvgRating = avg,
-                NoRatings = count,
-                IsbnDto = isbnDto,
+                AvgRating = hasRating ? rating.Average(p => p.ReaderRating) : 0,
+                NoRatings = hasRating ? rating.Count() : 0,
+                IsbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto(),
             };
-
 
             if (rating == null)
             {

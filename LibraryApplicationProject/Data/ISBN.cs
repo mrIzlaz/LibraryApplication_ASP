@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace LibraryApplicationProject.Data;
+﻿namespace LibraryApplicationProject.Data;
 
 public class ISBN
 {
@@ -10,8 +8,8 @@ public class ISBN
     public string Description { get; set; } = null!;
     public DateOnly ReleaseDate { get; set; }
     public List<Author> Author { get; set; } = new List<Author>();
-    public override string ToString() => $"{Title}, {Description}, {ReleaseDate}, Isbn: {Isbn},\n " +
-                                         $"{Author.Aggregate(string.Empty, (s, a) => s + $"{a.Person?.FirstName} {a.Person?.LastName} \n")}";
+    public override string ToString() => $"{Title}, {ReleaseDate.Year}, Isbn: {Isbn}, " +
+        $"{Author.Aggregate(string.Empty, (s, a) => s + $"{a.Person?.FirstName} {a.Person?.LastName}, ")}";
 
 }
 

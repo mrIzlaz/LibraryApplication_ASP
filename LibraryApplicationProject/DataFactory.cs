@@ -1,5 +1,8 @@
-﻿using LibraryApplicationProject.Data;
+﻿using LibraryApplicationProject.Controllers;
+using LibraryApplicationProject.Data;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
+using System.Net.WebSockets;
 using System.Text;
 
 namespace LibraryApplicationProject
@@ -17,19 +20,32 @@ namespace LibraryApplicationProject
             "Margot", "Astrid", "Charles", "Sean", "Crow", "Welsh", "Tim", "Bob", "Clarence", "Eva", "Lena", "Thomas",
             "Kent", "Sam", "Jonas", "Rikard", "Kalle", "Frank", "Tina", "Albert", "Robert", "Titti", "Hubertius","Anna","Alex",
         };
+        List<string> _titles = new List<string>()
+        {
+            "Sagan om Trolle","Sagan om Ringen", "Sagan om Ringens Återkomst", "Sagan om Ringens Återkomst II",
+            "Femte Elementet, en rörmockarers bekännelser","Leif GW Persons Memoarer", "En flaska till", "Skål!",
+            "På det skätte small det", "Vem tröstar Bengt?", "Andas ut, ta det lugnt", "Lugna andetag, Yoga-mästarens bekännelse",
+            "Vem kastade? Skogsturkens memoarer","Bäst i test, tips och tricks", "Göteborg, känner ingen sorg", "Stockholm utan hjärtan",
+            "En natt utan stjärnor", "Urmakarnas krig", "I Trons namn, berättelsen bakom Clu", "Den vita flykten, historien om Romarikets uppkomst och fall",
+            "Torkan, Flykten, Sorgen", "Nätter med vänner", "Dagar med Troll", "Järngrinden"
+        };
 
+        List<string> taggedTitles = new List<string>();
         public async Task CreateData(LibraryDbContext _context)
         {
-            Authors(_context, 5);
+            Authors(_context, 8);
             Memberships(_context, 5);
             await _context.SaveChangesAsync();
+            await Loans(_context, 5);
+            await Ratings(_context, 8);
 
+            await _context.SaveChangesAsync();
         }
 
 
-        private void Authors(LibraryDbContext _context, int noAuthors)
+        private void Authors(LibraryDbContext _context, int authors)
         {
-            for (int i = 0; i < noAuthors; i++)
+            for (int i = 0; i < authors; i++)
             {
                 var rnd = new Random();
                 var person = CreatePerson(_context);
@@ -40,21 +56,21 @@ namespace LibraryApplicationProject
                 };
                 _context.Authors.Add(auth);
 
-                int writtenBooks = rnd.Next(3);
+                int writtenBooks = rnd.Next(1,4);
                 for (int j = 0; j < writtenBooks; j++)
                 {
-                    var copies = rnd.Next(8);
+                    var copies = rnd.Next(2, 8);
                     var isbn = CreateISBN(_context, auth);
                     CreateBooks(_context, isbn, copies);
                 }
             }
-
+            
         }
 
-        private void Memberships(LibraryDbContext _context, int noMembers)
+        private void Memberships(LibraryDbContext _context, int members)
         {
             var rnd = new Random();
-            for (int i = 0; i < noMembers; i++)
+            for (int i = 0; i < members; i++)
             {
                 var date = GenerateDate(GeneratedDateVariants.RegistryDate);
                 var person = CreatePerson(_context);
@@ -69,6 +85,85 @@ namespace LibraryApplicationProject
             }
         }
 
+        private async Task Loans(LibraryDbContext _context, int loans)
+        {
+            var rnd = new Random();
+            var members = await _context.Memberships.ToListAsync();
+            var books = await _context.Books.ToListAsync();
+            var noBooks = rnd.Next(1, 5);
+            for (int i = 0; i < loans; i++)
+            {
+                var booklist = new List<Book>();
+                for (int j = 0; j < noBooks; j++)
+                {
+                    var b = books[rnd.Next(books.Count)];
+                    int trials = 0;
+                    while (!b.IsAvailable)
+                    {
+                        b = books[rnd.Next(books.Count)];
+                        trials++;
+                        if (trials > 6)
+                        {
+
+                            b = null;
+                            break;
+                        }
+                    }
+                    if (b == null) continue;
+                    b.IsAvailable = false;
+                    booklist.Add(b);
+                }
+                var date = GenerateDate(GeneratedDateVariants.BookingsDate);
+                var loan = new Loan()
+                {
+                    Membership = members[rnd.Next(members.Count())],
+                    Books = booklist,
+                    StartDate = date,
+                    EndDate = date.AddDays(14),
+                    IsActive = true,
+                };
+                _context.Loans.Add(loan);
+            }
+            return;
+        }
+
+        private async Task Ratings(LibraryDbContext _context, int ratings)
+        {
+            var rnd = new Random();
+            var members = await _context.Memberships.ToListAsync();
+            var isbns = await _context.ISBNs.ToListAsync();
+            for (var i = 0; i < ratings; i++)
+            {
+                var member = members[rnd.Next(members.Count)];
+                for (var j = 0; j < ratings; j++)
+                {
+                    Rating rating;
+                    ISBN isbn;
+                    do
+                    {
+                        isbn = isbns[rnd.Next(isbns.Count)];
+
+                        rating = new Rating()
+                        {
+                            Membership = member,
+                            Isbn = isbn,
+                            ReaderRating = rnd.Next(6),
+                        };
+                    }
+                    while (await RatingExists(_context, member, isbn));
+                    if (rating == null || isbn == null) continue;
+                    _context.Rating.Add(rating);
+                }
+            }
+        }
+
+
+        private async Task<bool> RatingExists(LibraryDbContext _context, Membership member, ISBN isbn)
+        {
+            var ratings = await _context.Rating.Where(r => r.Membership == member).ToListAsync();
+            return ratings.Any(r => r.Isbn == isbn);
+        }
+
         private ISBN CreateISBN(LibraryDbContext _context, Author author)
         {
             var rnd = new Random();
@@ -76,7 +171,7 @@ namespace LibraryApplicationProject
             var isbn = new ISBN()
             {
                 Isbn = rnd.NextInt64(11111111, 99999999),
-                Title = GenerateLoremIpsum(rnd.Next(1, 5)),
+                Title = GetTitle(),
                 Description = GenerateLoremIpsum(rnd.Next(12, 50)),
                 ReleaseDate = reDate,
             };
@@ -84,6 +179,18 @@ namespace LibraryApplicationProject
             author.Isbn.Add(isbn);
             _context.ISBNs.Add(isbn);
             return isbn;
+        }
+
+        private string GetTitle()
+        {
+            var rnd = new Random();
+            var title = string.Empty;
+            do
+            {
+                title = _titles[rnd.Next(_titles.Count)];
+            } while (taggedTitles.Contains(title));
+            taggedTitles.Add(title);
+            return title;
         }
         private void CreateBooks(LibraryDbContext _context, ISBN isbn, int noBooks)
         {
@@ -116,7 +223,7 @@ namespace LibraryApplicationProject
             var rnd = new Random();
             var date = dateVariant switch
             {
-                GeneratedDateVariants.DateOfBirth => new DateOnly(rnd.Next(1940, 2003), rnd.Next(1, 12), rnd.Next(1, 31)),
+                GeneratedDateVariants.DateOfBirth => new DateOnly(rnd.Next(1940, 2003), rnd.Next(1, 12), rnd.Next(1, 28)),
                 GeneratedDateVariants.RegistryDate => new DateOnly(rnd.Next(2020, 2023), rnd.Next(1, DateTime.Today.Month),
                     rnd.Next(1, DateTime.Today.Day)),
                 GeneratedDateVariants.BookingsDate => new DateOnly(2023, DateTime.Now.Month, rnd.Next(1, DateTime.Now.Day)),

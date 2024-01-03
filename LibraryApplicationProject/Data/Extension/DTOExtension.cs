@@ -10,7 +10,6 @@ public static class DTOExtension
             return null;
         return new BookDTO
         {
-            Id = book.Id,
             IsAvailable = book.IsAvailable,
             Isbn = book.Isbn.Isbn,
             Title = book.Isbn.Title,
@@ -25,7 +24,6 @@ public static class DTOExtension
             return null;
         return new BookSearchDTO
         {
-            Id = book.Id,
             Isbn = book.Isbn.Isbn,
             Title = book.Isbn.Title,
             Description = book.Isbn.Description,
@@ -53,7 +51,7 @@ public static class DTOExtension
     public static AuthorDTORead ConvertToDto(this Author author)
     {
         bool pNull = author.Person == null;
-        var authorDto = new AuthorDTORead
+        return new AuthorDTORead
         {
             Id = author.Id,
             FirstName = pNull ? "" : author.Person.FirstName,
@@ -62,17 +60,58 @@ public static class DTOExtension
             Description = author.Description,
             BooksList = author.Isbn.Select(i => i.ToString()).ToList(),
         };
-        return authorDto;
     }
-
+    public static ISBN ConvertFromDto(this BookEntryDTO entryDto, List<Author> authList)
+    {
+        return new ISBN()
+        {
+            Isbn = entryDto.Isbn,
+            Title = entryDto.Title,
+            Description = entryDto.Description,
+            ReleaseDate = entryDto.ReleaseDate,
+            Author = authList,
+        };
+    }
     public static Book ConvertFromDto(this BookEntryDTO dto, ISBN isbn)
     {
         var book = new Book
         {
             Isbn = isbn,
-            IsAvailable = dto.IsAvailable
+            IsAvailable = true
         };
         return book;
+    }
+
+    public static SingleRatingDTORead ConvertToSingleDto(this Rating rating)
+    {
+        return new SingleRatingDTORead()
+        {
+            IsbnDto = rating.Isbn.ConvertToDto(),
+            MembershipId = rating.Membership.Id,
+            Rating = rating.ReaderRating
+        };
+    }
+
+    public static List<SingleRatingDTORead> ConvertToSingleDtoList(this List<Rating> ratings)
+    {
+        List<SingleRatingDTORead> list = new List<SingleRatingDTORead>();
+        foreach (var rating in ratings)
+        {
+            list.Add(rating.ConvertToSingleDto());
+        }
+        return list;
+    }
+
+    public static AggregateRatingDTORead ConvertToDto(this Rating rating, double avgRating, int ratings)
+    {
+        var dto = new AggregateRatingDTORead()
+        {
+            AvgRating = avgRating,
+            NoRatings = ratings,
+            IsbnDto = rating.Isbn.ConvertToDto(),
+        };
+        return dto;
+
     }
     public static (Person, Membership) ConvertFromDto(this MembershipDTO dto)
     {
@@ -98,7 +137,7 @@ public static class DTOExtension
         var books = new List<BookDTO>();
         loan.Books.ForEach(x => books.Add(x.ConvertToDto()));
 
-        var dto = new LoanDTORead
+        return new LoanDTORead
         {
             Id = loan.Id,
             MembershipCardNumber = loan.Membership.CardNumber,
@@ -108,13 +147,12 @@ public static class DTOExtension
             ReturnDate = loan.EndDate,
             Books = books,
         };
-        return dto;
     }
 
     public static Loan ConvertFromDto(this LoanDTOEntry loanDtoEntry, Membership member, List<Book> books)
     {
 
-        var loan = new Loan
+        return new Loan
         {
             Membership = member,
             StartDate = DateOnly.FromDateTime(DateTime.Today),
@@ -122,24 +160,52 @@ public static class DTOExtension
             IsActive = true,
             Books = books,
         };
-        return loan;
     }
-
-    public static ISBNDTOEntry ConvertToDto(this ISBN isbn)
+    public static List<Author> ConvertFromDtoList(this List<AuthorDTORead> list)
     {
-        var dto = new ISBNDTOEntry
+        var authList = new List<Author>();
+
+        foreach (var i in list)
         {
-            Id = isbn.Isbn_Id,
+            authList.Add(new Author
+            {
+                Description = i.Description,
+                Person = new Person
+                {
+                    FirstName = i.FirstName,
+                    LastName = i.LastName,
+                    BirthDate = i.BirthDate
+                },
+            });
+        }
+        return authList;
+    }
+    public static ISBN ConvertFromDto(this AuthorBookDTO dto, List<Author> authList)
+    {
+        return new ISBN()
+        {
+            Isbn_Id = dto.Id,
+            Isbn = dto.Isbn,
+            Title = dto.Title,
+            Description = dto.Description,
+            ReleaseDate = dto.ReleaseDate,
+            Author = authList,
+        };
+    }
+    public static ISBNDTORead ConvertToDto(this ISBN isbn)
+    {
+        return new ISBNDTORead
+        {
             Isbn = isbn.Isbn,
             Title = isbn.Title,
             Description = isbn.Description,
             ReleaseDate = isbn.ReleaseDate,
-            Authors = isbn.Author.ConvertToIds(),
+            Authors = isbn.Author.ConvertToStrings(),
         };
 
-        return dto;
+
     }
-    public static ISBNDTOEntry ConvertToDto(this ISBN isbn, double avgRating)
+    public static ISBNDTORead ConvertToDto(this ISBN isbn, double avgRating)
     {
         var dto = isbn.ConvertToDto();
         dto.AvgRating = avgRating;
