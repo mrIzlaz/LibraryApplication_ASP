@@ -9,7 +9,6 @@
 
     public class AggregateRatingDTORead
     {
-        public double AvgRating { get; set; }
         public int NoRatings { get; set; }
         public ISBNDTORead IsbnDto { get; set; } = null!;
     }
@@ -17,6 +16,6 @@
     {
         public int Rating { get; set; }
         public int MembershipId { get; set; }
-        public ISBNDTORead IsbnDto { get; set; } = null!;
+        public long Isbn { get; set; }
     }
 }

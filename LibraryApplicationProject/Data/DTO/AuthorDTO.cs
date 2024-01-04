@@ -12,7 +12,7 @@ public class AuthorDTORead : PersonDTO
     public List<string>? BooksList { get; set; } = new();
 }
 
-public class AuthorDTOInsert : PersonDTO
+public class AuthorDTOInsert : PersonDTOPost
 {
     public string? Description { get; set; } = string.Empty;
 }

@@ -86,8 +86,8 @@ public static class DTOExtension
     {
         return new SingleRatingDTORead()
         {
-            IsbnDto = rating.Isbn.ConvertToDto(),
-            MembershipId = rating.Membership.Id,
+            Isbn = rating.Isbn == null ? -1 : rating.Isbn.Isbn,
+            MembershipId = rating.Membership == null ? -1 : rating.Membership.Id,
             Rating = rating.ReaderRating
         };
     }
@@ -100,18 +100,6 @@ public static class DTOExtension
             list.Add(rating.ConvertToSingleDto());
         }
         return list;
-    }
-
-    public static AggregateRatingDTORead ConvertToDto(this Rating rating, double avgRating, int ratings)
-    {
-        var dto = new AggregateRatingDTORead()
-        {
-            AvgRating = avgRating,
-            NoRatings = ratings,
-            IsbnDto = rating.Isbn.ConvertToDto(),
-        };
-        return dto;
-
     }
     public static (Person, Membership) ConvertFromDto(this MembershipDTO dto)
     {
@@ -161,7 +149,7 @@ public static class DTOExtension
             Books = books,
         };
     }
-    public static List<Author> ConvertFromDtoList(this List<AuthorDTORead> list)
+    public static List<Author> ConvertFromDtoList(this List<AuthorDTOInsert> list)
     {
         var authList = new List<Author>();
 
@@ -184,7 +172,6 @@ public static class DTOExtension
     {
         return new ISBN()
         {
-            Isbn_Id = dto.Id,
             Isbn = dto.Isbn,
             Title = dto.Title,
             Description = dto.Description,
@@ -202,8 +189,6 @@ public static class DTOExtension
             ReleaseDate = isbn.ReleaseDate,
             Authors = isbn.Author.ConvertToStrings(),
         };
-
-
     }
     public static ISBNDTORead ConvertToDto(this ISBN isbn, double avgRating)
     {

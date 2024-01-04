@@ -58,7 +58,7 @@ namespace LibraryApplicationProject.Controllers
             return getBooks;
         }
 
-        // GET: api/Books/find/1234567890
+        // GET: api/Books/getstock/1234567890
         [HttpGet("getstock/{isbn}")]
         public async Task<ActionResult<BookSearchDTO>> GetBookByISBN(long isbn)
         {
@@ -190,7 +190,8 @@ namespace LibraryApplicationProject.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction($"GetBook, quantity: {entryDto.Quantity}", book);
+            return CreatedAtAction("GetBookByISBN", new { isbn = entryDto.Isbn }, entryDto);
+
         }
         // POST: api/Books/newbookandauthor
         [HttpPost("newbookandauthor")]
@@ -200,7 +201,8 @@ namespace LibraryApplicationProject.Controllers
             var books = BookFactory(dto.Quantity, isbn);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction($"GetBook, quantity: {dto.Quantity}", new { id = dto.Id }, books);
+            return CreatedAtAction("GetBookByISBN", new { isbn = dto.Isbn }, dto);
+
         }
 
         // DELETE: api/Books/5
@@ -239,24 +241,6 @@ namespace LibraryApplicationProject.Controllers
 
             return (quantity, available);
         }
-        //        private async Task<double> GetBookRating(long isbn) => Math.Round(await _context.Rating.Where(r => r.Isbn != null && r.Isbn.Isbn == isbn).AverageAsync(r => r.ReaderRating), 2);
-
-        //private async Task<double> GetBookRating(long isbn)
-        //{
-        //    try
-        //    {
-        //        var averageRating = await _context.Rating
-        //            .Where(r => r.Isbn != null && r.Isbn.Isbn == isbn)
-        //            .AverageAsync(r => r.ReaderRating);
-
-        //        return Math.Round(averageRating, 2);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Error with: {isbn}. Message: {ex}");
-        //        return -1;
-        //    }
-        //}
 
         private async Task<double> GetBookRating(long isbn)
         {

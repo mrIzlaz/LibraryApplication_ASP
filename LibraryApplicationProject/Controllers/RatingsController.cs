@@ -9,6 +9,7 @@ using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
+using System.Diagnostics.Eventing.Reader;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -42,15 +43,17 @@ namespace LibraryApplicationProject.Controllers
         {
             List<SingleRatingDTORead> sList = new List<SingleRatingDTORead>();
             var rating = await _context.Rating
-                .Include(p => p.Isbn)
-                .Include(i => i.Isbn.Author).Where(i => i.Membership.Id == memberId).ToListAsync();
-
-            rating.ForEach(r => sList.Add(r.ConvertToSingleDto()));
+                .Include(r => r.Isbn)
+                .Include(r => r.Membership)
+                .Where(i => i.Membership != null && i.Membership.Id == memberId).ToListAsync();
 
             if (rating == null)
             {
                 return NotFound();
             }
+
+            rating.ForEach(r => sList.Add(r.ConvertToSingleDto()));
+
 
             return sList;
         }
@@ -62,13 +65,15 @@ namespace LibraryApplicationProject.Controllers
         {
             var rating = await _context.Rating
                 .Include(p => p.Isbn)
-                .Include(i => i.Isbn.Author).Where(i => i.Isbn.Isbn == isbn).ToListAsync();
-            bool hasRating = rating.Count == 0;
+                .Include(i => i.Isbn.Author)
+                .ThenInclude(a => a.Person)
+                .Where(i => i.Isbn.Isbn == isbn).ToListAsync();
+            bool hasRating = rating.Count != 0;
+            var avgRating = hasRating ? Math.Round(rating.Average(p => p.ReaderRating), 2) : 0;
             var dto = new AggregateRatingDTORead()
             {
-                AvgRating = hasRating ? rating.Average(p => p.ReaderRating) : 0,
                 NoRatings = hasRating ? rating.Count() : 0,
-                IsbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto(),
+                IsbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto(avgRating),
             };
 
             if (rating == null)
@@ -78,48 +83,56 @@ namespace LibraryApplicationProject.Controllers
 
             return dto;
         }
-
-        // PUT: api/Ratings/5
+        // POST: api/Ratings/post/51/123412421/1
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutRating(int id, Rating rating)
+        [HttpPost("postorput/{memberId}/{isbn}/{ratingVal}")]
+        public async Task<ActionResult<Rating>> PostOrPutRating(int memberId, long isbn, int ratingVal)
         {
-            if (id != rating.Id)
-            {
-                return BadRequest();
-            }
+            var membership = await _context.Memberships.FindAsync(memberId);
+            if (membership == null) return NotFound("Membership not found");
 
-            _context.Entry(rating).State = EntityState.Modified;
+            var isbnObj = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
+            if (isbnObj == null) return NotFound("ISBN not found");
 
-            try
+            if (ratingVal < 0 || ratingVal > 5) return BadRequest($"Rating value not within range (0-5), was {ratingVal}");
+
+            var rating = await _context.Rating
+                .FirstOrDefaultAsync(r => r.Membership.Id == memberId && r.Isbn.Isbn == isbnObj.Isbn);
+
+            if (rating != null)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!RatingExists(id))
+                // Update existing rating
+                rating.ReaderRating = ratingVal;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                return NoContent();
             }
+            else
+            {
+                // Create new rating
+                rating = new Rating()
+                {
+                    Membership = membership,
+                    Isbn = isbnObj,
+                    ReaderRating = ratingVal
+                };
 
-            return NoContent();
+                _context.Rating.Add(rating);
+
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetRating", new { id = rating.Id }, rating);
+            }
         }
 
-        // POST: api/Ratings
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Rating>> PostRating(Rating rating)
-        {
-            _context.Rating.Add(rating);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetRating", new { id = rating.Id }, rating);
-        }
 
         // DELETE: api/Ratings/5
         [HttpDelete("{id}")]
@@ -135,11 +148,6 @@ namespace LibraryApplicationProject.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool RatingExists(int id)
-        {
-            return _context.Rating.Any(e => e.Id == id);
         }
     }
 }
