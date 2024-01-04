@@ -112,6 +112,7 @@ public static class DTOExtension
         dto.RegistryDate = dto.RegistryDate <= DateOnly.FromDateTime(DateTime.Today) ? DateOnly.FromDateTime(DateTime.Today) : dto.RegistryDate;
         Membership membership = new Membership
         {
+            Id = dto.Id,
             CardNumber = dto.CardNumber,
             RegistryDate = dto.RegistryDate,
             ExpirationDate = dto.ExpirationDate,
@@ -128,6 +129,7 @@ public static class DTOExtension
         return new LoanDTORead
         {
             Id = loan.Id,
+            IsActive = loan.IsActive,
             MembershipCardNumber = loan.Membership.CardNumber,
             FirstName = loan.Membership.Person.FirstName,
             LastName = loan.Membership.Person.LastName,

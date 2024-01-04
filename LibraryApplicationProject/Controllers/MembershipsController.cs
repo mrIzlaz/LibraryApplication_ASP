@@ -62,18 +62,23 @@ namespace LibraryApplicationProject.Controllers
             }
 
             var membership = await _context.Memberships.FindAsync(dto.Id);
-            if(membership == null) return NotFound("Membership not found");
-            
-            var tuple = dto.ConvertFromDto();
+            if (membership == null) return NotFound("Membership not found");
 
-            var person = await _context.Persons.FindAsync(tuple.Item1.Id);
-            if(person == null) return NotFound("Person not found");
-            person = tuple.Item1;
+            var tuple = dto.ConvertFromDto();
+            var person = await _context.Persons.FindAsync(membership.Person.Id);
+            if (person == null)
+            {
+                //Create new person if person not found.
+                person = tuple.Item1;
+                _context.Persons.Add(person);
+            }
+            else
+                _context.Entry(person).State = EntityState.Modified;
 
             membership = tuple.Item2;
-            membership.Person = tuple.Item1;
+            membership.Person = person;
             _context.Entry(membership).State = EntityState.Modified;
-            _context.Entry(person).State = EntityState.Modified;
+
             try
             {
                 await _context.SaveChangesAsync();

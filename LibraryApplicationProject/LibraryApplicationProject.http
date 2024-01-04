@@ -7,41 +7,15 @@ GET {{LibraryApplicationProject_HostAddress}}/api/loans
 GET {{LibraryApplicationProject_HostAddress}}/api/isbns
 
 ###
-
-POST {{LibraryApplicationProject_HostAddress}}/api/authors
-Content-Type: application/json
-
-{
- 
-  "id": 0,
-  "firstName": "Anna",
-  "lastName": "Lindroos",
-  "birthDate": "1998-01-01T14:17:40.385Z",
-  "description": "Frend",
-  "booksList": [
-    ""
-  ]
- }
-
-###
-
-
-
-POST {{LibraryApplicationProject_HostAddress}}/api/authors
-Content-Type: application/json
-
-{
-  "id": 0,
-  "firstName": "Alex",
-  "lastName": "Råsberg",
-  "birthDate": "1989-10-01T14:17:40.385Z",
-  "description": "Frend",
-  "booksList": [
-    ""
-   ]
-}
-
-###
 GET {{LibraryApplicationProject_HostAddress}}/api/authors
+
+###
+
+POST {{LibraryApplicationProject_HostAddress}}/api/loans/loanbooks
+Content-Type: application/json
+
+{
+  //LoanDTOEntry
+}
 
 ###

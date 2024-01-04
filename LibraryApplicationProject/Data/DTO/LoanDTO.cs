@@ -2,7 +2,6 @@
 {
     public class LoanDTOEntry
     {
-        public int Id { get; set; }
         public long MembershipCardNumber { get; set; }
         public List<int> BookIds { get; set; } = new();
         public DateOnly ReturnDate { get; set; }

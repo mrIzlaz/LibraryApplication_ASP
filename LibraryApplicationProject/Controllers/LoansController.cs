@@ -32,8 +32,6 @@ namespace LibraryApplicationProject.Controllers
                 .Include(m => m.Membership.Person)
                 .Include(b => b.Books).ThenInclude(a => a.Isbn.Author).ThenInclude(p => p.Person)
                 .Select(x => x.ConvertToDto()).ToListAsync();
-
-
         }
 
         // GET: api/Loans/5
@@ -159,8 +157,7 @@ namespace LibraryApplicationProject.Controllers
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                return BadRequest(e.Message);
             }
             if (loan == null) return BadRequest("Error setting up Loan object");
             _context.Loans.Add(loan);
