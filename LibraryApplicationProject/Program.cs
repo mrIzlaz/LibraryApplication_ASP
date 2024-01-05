@@ -22,7 +22,7 @@ builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializ
 
 builder.Services.AddDbContext<LibraryDbContext>(opt =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SQLDataString02");//"AzureDbString" || "SQLDataString"
+    var connectionString = builder.Configuration.GetConnectionString("SQLDataString");//"AzureDbString" || "SQLDataString"
     var connBuilder = new SqlConnectionStringBuilder(connectionString)
     {
         Password = builder.Configuration["DbPassword"]

@@ -19,17 +19,28 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Books/allbooks
         [HttpGet("allbooks")]
-        public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks()
+        public async Task<ActionResult<IEnumerable<BookDTORead>>> GetBooks()
         {
-            List<BookDTO> getBooks = new List<BookDTO>();
+            List<BookDTORead> getBooks = new List<BookDTORead>();
             var books = await _context.Books.Include(i => i.Isbn)
-                .Include(a => a.Isbn.Author)
+                .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
                 .ToListAsync();
 
+            var ratings = new Dictionary<long, double>();
+            var distinctIsbn = books.DistinctBy(b => b.Isbn!.Isbn);
+            foreach (var book in distinctIsbn)
+            {
+                if (book.Isbn == null) continue;
+                var isbn = book.Isbn.Isbn;
+                var rating = await GetBookRating(isbn);
+                ratings.Add(isbn, rating);
+            }
+
             foreach (var book in books)
             {
-                var dto = book.ConvertToDto();
+                ratings.TryGetValue(book.Isbn.Isbn, out var rating);
+                var dto = book.ConvertToDtoRead(rating);
                 getBooks.Add(dto);
             }
 
@@ -41,11 +52,11 @@ namespace LibraryApplicationProject.Controllers
         {
             List<BookSearchDTO> getBooks = new List<BookSearchDTO>();
             var books = await _context.Books.Include(i => i.Isbn)
-                .Include(a => a.Isbn.Author)
+                .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
                 .ToListAsync();
 
-            books.DistinctBy(b => b.Isbn.Isbn).ToList().ForEach(x => getBooks.Add(x.ConvertToDtoRead()));
+            books.DistinctBy(b => b.Isbn!.Isbn).ToList().ForEach(x => getBooks.Add(x.ConvertToDtoSearch()));
             foreach (var book in getBooks)
             {
                 var rating = await GetBookRating(book.Isbn);
@@ -64,15 +75,11 @@ namespace LibraryApplicationProject.Controllers
         {
             var books = await _context.Books
                 .Include(book => book.Isbn)
-                .Include(a => a.Isbn.Author)
+                .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
                 .ToListAsync();
-            var book = books.First(b => b.Isbn.Isbn == isbn);
-            if (book == null)
-            {
-                return NotFound();
-            }
-            var dto = book.ConvertToDtoRead();
+            var book = books.First(b => b.Isbn != null && b.Isbn.Isbn == isbn);
+            var dto = book.ConvertToDtoSearch();
 
             var tup = await GetBookStock(dto.Isbn);
             dto.Available = tup.Available;
@@ -215,6 +222,11 @@ namespace LibraryApplicationProject.Controllers
                 return NotFound();
             }
 
+            if (!book.IsAvailable)
+            {
+                return BadRequest("Book needs to be available/returned to be able to be deleted");
+            }
+
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();
 
@@ -222,20 +234,13 @@ namespace LibraryApplicationProject.Controllers
         }
 
         private bool BookExists(int id) => _context.Books.Any(e => e.Id == id);
-        private bool BookExistsISBN(int isbn) => _context.Books.Any(e => e.Isbn.Isbn == isbn);
+        private bool BookExistsISBN(int isbn) => _context.Books.Any(e => e.Isbn != null && e.Isbn.Isbn == isbn);
         private bool AuthorExists(int id) => _context.Authors.Any(a => a.Id == id);
 
         private async Task<(int Quantity, int Available)> GetBookStock(long isbn)
         {
             var books = await _context.Books.Where(b => b.Isbn != null && b.Isbn.Isbn == isbn)
                 .Include(book => book.Isbn).ToListAsync();
-
-            var book = books.First(b => b.Isbn != null && b.Isbn.Isbn == isbn);
-            if (book == null)
-            {
-                return (0, 0);
-            }
-            var dto = book.ConvertToDtoRead();
             var quantity = books.Count(b => b.Isbn != null && b.Isbn.Isbn == isbn);
             var available = books.Count(b => b.Isbn != null && b.Isbn.Isbn == isbn && b.IsAvailable);
 

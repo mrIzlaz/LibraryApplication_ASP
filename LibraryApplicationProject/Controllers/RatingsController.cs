@@ -37,6 +37,22 @@ namespace LibraryApplicationProject.Controllers
             return rs.ConvertToSingleDtoList();
         }
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<SingleRatingDTORead>> GetRating(int id)
+        {
+            var rs = await _context.Rating
+                .Include(p => p.Isbn)
+                .Include(p => p.Isbn.Author)
+                .ThenInclude(a => a.Person)
+                .Include(p => p.Membership)
+                .FirstOrDefaultAsync(r => r.Id == id);
+            if (rs == null)
+                return NotFound();
+            return rs.ConvertToSingleDto();
+        }
+
+
+
         // GET: api/Ratings/searchwith/5
         [HttpGet("searchwithmemberid{memberId}")]
         public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetRatingByMember(int memberId)
@@ -86,7 +102,7 @@ namespace LibraryApplicationProject.Controllers
         // POST: api/Ratings/post/51/123412421/1
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost("postorput/{memberId}/{isbn}/{ratingVal}")]
-        public async Task<ActionResult<Rating>> PostOrPutRating(int memberId, long isbn, int ratingVal)
+        public async Task<ActionResult<SingleRatingDTORead>> PostOrPutRating(int memberId, long isbn, int ratingVal)
         {
             var membership = await _context.Memberships.FindAsync(memberId);
             if (membership == null) return NotFound("Membership not found");
@@ -129,7 +145,9 @@ namespace LibraryApplicationProject.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetRating", new { id = rating.Id }, rating);
+                var dto = rating.ConvertToSingleDto();
+
+                return CreatedAtAction("GetRating", new { id = rating.Id }, dto);
             }
         }
 

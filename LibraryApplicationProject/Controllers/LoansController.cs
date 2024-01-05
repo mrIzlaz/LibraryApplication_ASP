@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using LibraryApplicationProject;
 using LibraryApplicationProject.Data;
 using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
@@ -29,8 +23,8 @@ namespace LibraryApplicationProject.Controllers
         public async Task<ActionResult<IEnumerable<LoanDTORead>>> GetLoans()
         {
             return await _context.Loans
-                .Include(m => m.Membership.Person)
-                .Include(b => b.Books).ThenInclude(a => a.Isbn.Author).ThenInclude(p => p.Person)
+                .Include(m => m.Membership!.Person)
+                .Include(b => b.Books).ThenInclude(a => a.Isbn!.Author).ThenInclude(p => p.Person)
                 .Select(x => x.ConvertToDto()).ToListAsync();
         }
 
@@ -51,7 +45,7 @@ namespace LibraryApplicationProject.Controllers
         // PUT: api/Loans/returnbook/5
 
         [HttpPut("ReturnBook/{bookId}")]
-        public async Task<ActionResult<LoanDTORead>> PutLoan(int bookId)
+        public async Task<ActionResult<BookDTORead>> PutLoan(int bookId)
         {
             var book = await _context.Books.FindAsync(bookId);
             if (book == null)
@@ -60,6 +54,11 @@ namespace LibraryApplicationProject.Controllers
 
             var loan = await _context.Loans
                 .Include(loan => loan.Books)
+                .ThenInclude(b => b.Isbn)
+                .ThenInclude(i => i!.Author)
+                .ThenInclude(a => a.Person)
+                .Include(m => m.Membership)
+                .Include(m => m.Membership!.Person)
                 .SingleAsync(l => l.IsActive && l.Books.Contains(book));
 
             book.IsAvailable = true;
@@ -82,8 +81,10 @@ namespace LibraryApplicationProject.Controllers
                     throw;
                 }
             }
+            if (loan.IsActive)
+                return NoContent();
+            return CreatedAtAction("CloseLoan", new { id = loan.Id }, loan);
 
-            return NoContent();
         }
 
 
@@ -94,8 +95,10 @@ namespace LibraryApplicationProject.Controllers
         {
             var loan = await _context.Loans
                 .Include(l => l.Books)
+                .ThenInclude(b => b.Isbn)
+                .ThenInclude(i => i!.Author)
                 .Include(l => l.Membership)
-                .Include(l => l.Membership.Person)
+                .Include(l => l.Membership!.Person)
                 .SingleAsync(l => l.Id == id);
 
             if (id != loan.Id) return BadRequest();
@@ -139,7 +142,7 @@ namespace LibraryApplicationProject.Controllers
 
                 var allBooks = await _context.Books
                     .Include(i => i.Isbn)
-                    .Include(a => a.Isbn.Author)
+                    .Include(a => a.Isbn!.Author)
                     .ThenInclude(p => p.Person)
                     .ToListAsync();
 
@@ -148,7 +151,7 @@ namespace LibraryApplicationProject.Controllers
                 {
                     var book = allBooks.Single(b => b.Id == bookId);
                     if (!book.IsAvailable)
-                        return Conflict($"bookId: {bookId} {book.Isbn.Title} is not Available");
+                        return Conflict($"bookId: {bookId} {book.Isbn?.Title} is not Available");
                     books.Add(book);
                     book.IsAvailable = false;
                 }
