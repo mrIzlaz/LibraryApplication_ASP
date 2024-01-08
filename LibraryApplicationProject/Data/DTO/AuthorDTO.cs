@@ -1,6 +1,6 @@
 ﻿namespace LibraryApplicationProject.Data.DTO;
 
-public class AuthorDTORead : PersonDTO
+public class AuthorDTORead : PersonDTORead
 {
     public new int Id { get; set; }
     public new string FirstName{ get; set; } = string.Empty;

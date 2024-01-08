@@ -15,6 +15,7 @@ public class Loan
     {
         IsActive = false;
         foreach (var bookId in Books) bookId.IsAvailable = true;
+        EndDate = DateOnly.FromDateTime(DateTime.Today);
     }
 
 }

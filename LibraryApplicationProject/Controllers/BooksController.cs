@@ -3,6 +3,7 @@ using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LibraryApplicationProject.Controllers
 {
@@ -17,14 +18,15 @@ namespace LibraryApplicationProject.Controllers
             _context = context;
         }
 
-        // GET: api/Books/allbooks
-        [HttpGet("allbooks")]
+        // GET: api/Books/all
+        [HttpGet("all")]
         public async Task<ActionResult<IEnumerable<BookDTORead>>> GetBooks()
         {
             List<BookDTORead> getBooks = new List<BookDTORead>();
             var books = await _context.Books.Include(i => i.Isbn)
                 .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
+                .AsNoTracking()
                 .ToListAsync();
 
             var ratings = new Dictionary<long, double>();
@@ -46,19 +48,21 @@ namespace LibraryApplicationProject.Controllers
 
             return getBooks;
         }
-        // GET: api/Books/summarized
-        [HttpGet("stockoverview")]
+        // GET: api/Books/stock
+        [HttpGet("stock")]
         public async Task<ActionResult<IEnumerable<BookSearchDTO>>> GetBooksOverview()
         {
             List<BookSearchDTO> getBooks = new List<BookSearchDTO>();
             var books = await _context.Books.Include(i => i.Isbn)
                 .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
+                .AsNoTracking()
                 .ToListAsync();
 
             books.DistinctBy(b => b.Isbn!.Isbn).ToList().ForEach(x => getBooks.Add(x.ConvertToDtoSearch()));
             foreach (var book in getBooks)
             {
+                book.Description = book.Description[..50] + "...";
                 var rating = await GetBookRating(book.Isbn);
                 book.AvgRating = rating;
                 var tuple = await GetBookStock(book.Isbn);
@@ -69,14 +73,15 @@ namespace LibraryApplicationProject.Controllers
             return getBooks;
         }
 
-        // GET: api/Books/getstock/1234567890
-        [HttpGet("getstock/{isbn}")]
+        // GET: api/Books/stock/1234567890
+        [HttpGet("stock/{isbn:long}")]
         public async Task<ActionResult<BookSearchDTO>> GetBookByISBN(long isbn)
         {
             var books = await _context.Books
                 .Include(book => book.Isbn)
                 .Include(a => a.Isbn!.Author)
                 .ThenInclude(a => a.Person)
+                .AsNoTracking()
                 .ToListAsync();
             var book = books.First(b => b.Isbn != null && b.Isbn.Isbn == isbn);
             var dto = book.ConvertToDtoSearch();
@@ -87,10 +92,44 @@ namespace LibraryApplicationProject.Controllers
             dto.AvgRating = await GetBookRating(isbn);
             return dto;
         }
-        
+
+        //Get: api/Books/info/2
+        [HttpGet("info/{id:int}")]
+        public async Task<ActionResult<BookDTORead>> GetBookById(int id)
+        {
+            var book = await _context.Books
+                .Include(b => b.Isbn)
+                .ThenInclude(i => i.Author)
+                .ThenInclude(a => a.Person)
+                .AsNoTracking()
+                .SingleAsync(b => b.Id == id);
+
+            BookDTORead dto = book.ConvertToDtoRead();
+
+            LoanDTORead? loanDto = null;
+            if (!book.IsAvailable)
+            {
+                var loan = await _context.Loans
+                    .Include(l => l.Membership)
+                    .ThenInclude(l => l.Person)
+                    .AsNoTracking()
+                    .AsNoTracking()
+                    .SingleAsync(l => l.IsActive && l.Books.Contains(book));
+                loanDto = loan.ConvertToDto();
+            }
+
+
+            var response = new
+            {
+                BookData = dto,
+                Loan = loanDto,
+            };
+
+            return Ok(response);
+        }
         // PUT: api/Books/update/1234567890
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("update/{isbn}")]
+        [HttpPut("update/{isbn:int}")]
         public async Task<IActionResult> PutBook(int isbn, BookEntryDTO dto)
         {
             if (isbn != dto.Isbn)
@@ -131,45 +170,40 @@ namespace LibraryApplicationProject.Controllers
             }
             return NoContent();
         }
-        // PUT: api/Books/addauthorto/1234567890
-        [HttpPatch("addauthorto/{isbn}")]
+
+        // PATCH: api/Books/update/1234567890/author/2
+        [HttpPatch("update/{isbn:int}/author/{authorId:int}")]
         public async Task<IActionResult> AddAuthorToExistingISBN(int isbn, int authorId)
         {
+
+            if (isbn <= 0 || authorId <= 0)
+            {
+                return BadRequest("Invalid ISBN or AuthorId.");
+            }
+
             if (!BookExistsISBN(isbn) || !AuthorExists(authorId))
             {
                 return NotFound();
             }
-            try
-            {
-                var isbnVal = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
-                var author = await _context.Authors.FindAsync(authorId);
-                if (author == null) return BadRequest();
-                isbnVal.Author.Add(author);
-                _context.Entry(isbnVal).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BookExistsISBN(isbn) || !AuthorExists(authorId))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-            return NoContent();
-        }
 
-        // POST: api/Books/newbook
+            var isbnVal = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
+            var author = await _context.Authors.FindAsync(authorId);
+
+            if (author == null)
+            {
+                return BadRequest("Invalid authorId.");
+            }
+
+            isbnVal.Author.Add(author);
+            _context.Entry(isbnVal).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+
+        }
+        // POST: api/Books/new
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("newbook")]
+        [HttpPost("new")]
         public async Task<ActionResult<BookEntryDTO>> PostBook(BookEntryDTO entryDto)
         {
             var authList = new List<Author>();
@@ -199,8 +233,8 @@ namespace LibraryApplicationProject.Controllers
             return CreatedAtAction("GetBookByISBN", new { isbn = entryDto.Isbn }, entryDto);
 
         }
-        // POST: api/Books/newbookandauthor
-        [HttpPost("newbookandauthor")]
+        // POST: api/Books/new/author
+        [HttpPost("new/author")]
         public async Task<ActionResult<AuthorBookDTO>> PostBookWithAuthor(AuthorBookDTO dto)
         {
             var isbn = dto.ConvertFromDto(dto.Authors.ConvertFromDtoList());
@@ -212,7 +246,7 @@ namespace LibraryApplicationProject.Controllers
         }
 
         // DELETE: api/Books/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteBook(int id)
         {
             var book = await _context.Books.FindAsync(id);
@@ -227,6 +261,33 @@ namespace LibraryApplicationProject.Controllers
             }
 
             _context.Books.Remove(book);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: api/Books/isbn/5312313123
+        [HttpDelete("isbn/{isbn:long}")]
+        public async Task<IActionResult> DeleteBook(long isbn)
+        {
+            var isbnVal = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
+
+            var books = await _context.Books
+                .Include(b => b.Isbn)
+                .Where(b => b.Isbn != null && b.Isbn.Isbn == isbn).ToListAsync();
+
+            // Check if there are books in database
+            if (!books.IsNullOrEmpty())
+            {
+                return BadRequest("Physical books needs to be removed from database for ISBN to be removed properly");
+            }
+
+            _context.Authors.Where(a => a.Isbn.Contains(isbnVal)).ToList().ForEach(a =>
+            {
+                a.Isbn.Remove(isbnVal);
+                _context.Entry(a).State = EntityState.Modified;
+            });
+            _context.ISBNs.Remove(isbnVal);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -271,8 +332,6 @@ namespace LibraryApplicationProject.Controllers
                 return -1; // or handle the exception in a way that makes sense for your application
             }
         }
-
-
         private List<Book> BookFactory(int i, ISBN isbn)
         {
             var list = new List<Book>();

@@ -24,12 +24,14 @@ namespace LibraryApplicationProject.Controllers
         {
             return await _context.Loans
                 .Include(m => m.Membership!.Person)
-                .Include(b => b.Books).ThenInclude(a => a.Isbn!.Author).ThenInclude(p => p.Person)
+                .Include(b => b.Books).ThenInclude(a => a.Isbn!.Author)
+                .ThenInclude(p => p.Person)
+                .AsNoTracking()
                 .Select(x => x.ConvertToDto()).ToListAsync();
         }
 
         // GET: api/Loans/5
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Loan>> GetLoan(int id)
         {
             var loan = await _context.Loans.FindAsync(id);
@@ -42,15 +44,14 @@ namespace LibraryApplicationProject.Controllers
             return loan;
         }
 
-        // PUT: api/Loans/returnbook/5
+        // PUT: api/Loans/return/5
 
-        [HttpPut("ReturnBook/{bookId}")]
-        public async Task<ActionResult<BookDTORead>> PutLoan(int bookId)
+        [HttpPut("return/{bookId:int}")]
+        public async Task<ActionResult> PutLoan(int bookId, int? rating)
         {
-            var book = await _context.Books.FindAsync(bookId);
-            if (book == null)
-                return BadRequest();
-
+            var book = await _context.Books
+                .Include(b => b.Isbn)
+                .SingleAsync(b => b.Id == bookId);
 
             var loan = await _context.Loans
                 .Include(loan => loan.Books)
@@ -61,8 +62,20 @@ namespace LibraryApplicationProject.Controllers
                 .Include(m => m.Membership!.Person)
                 .SingleAsync(l => l.IsActive && l.Books.Contains(book));
 
+            if (rating != null)
+            {
+                if (rating is > 5 or < 0)
+                    return BadRequest("Rating must be between 0 and 5");
+                _context.Rating.Add(new Rating()
+                {
+                    Isbn = book.Isbn,
+                    Membership = loan.Membership,
+                    ReaderRating = (int)rating,
+                });
+            }
             book.IsAvailable = true;
-            loan.IsActive = loan.Books.Any(b => !b.IsAvailable);
+            if (loan.Books.All(b => b.IsAvailable))
+                loan.CloseLoan();
 
             _context.Entry(loan).State = EntityState.Modified;
 
@@ -76,10 +89,8 @@ namespace LibraryApplicationProject.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
             if (loan.IsActive)
                 return NoContent();
@@ -88,9 +99,9 @@ namespace LibraryApplicationProject.Controllers
         }
 
 
-        // PUT: api/Loans/closeloan/5
+        // PUT: api/Loans/close/5
 
-        [HttpPut("closeloan{id}")]
+        [HttpPut("close/{id:int}")]
         public async Task<ActionResult<LoanDTORead>> CloseLoan(int id)
         {
             var loan = await _context.Loans
@@ -123,9 +134,9 @@ namespace LibraryApplicationProject.Controllers
             return dto;
         }
 
-        // POST: api/Loans/loanbooks
+        // POST: api/Loans/new
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("loanbooks")]
+        [HttpPost("new")]
         public async Task<ActionResult<LoanDTORead>> PostLoan(LoanDTOEntry dtoEntry)
         {
             Loan loan;
@@ -162,7 +173,7 @@ namespace LibraryApplicationProject.Controllers
             {
                 return BadRequest(e.Message);
             }
-            if (loan == null) return BadRequest("Error setting up Loan object");
+
             _context.Loans.Add(loan);
             await _context.SaveChangesAsync();
 
@@ -172,7 +183,7 @@ namespace LibraryApplicationProject.Controllers
         }
 
         // DELETE: api/Loans/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteLoan(int id)
         {
             var loan = await _context.Loans.FindAsync(id);

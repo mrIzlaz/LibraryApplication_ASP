@@ -21,12 +21,18 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Memberships
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MembershipDTO>>> GetMemberships()
+        public async Task<ActionResult<IEnumerable<MembershipDTOPost>>> GetMemberships()
         {
-            List<MembershipDTO> list = new List<MembershipDTO>();
+            List<MembershipDTOPost> list = new List<MembershipDTOPost>();
 
-            var memberships = await _context.Memberships.Include(person => person.Person).ToListAsync();
-            var activeLoans = await _context.Loans.Where(l => l.IsActive).ToListAsync();
+            var memberships = await _context.Memberships
+                .Include(person => person.Person)
+                .AsNoTracking()
+                .ToListAsync();
+            var activeLoans = await _context.Loans.Where(l => l.IsActive)
+                .Include(loan => loan.Membership)
+                .AsNoTracking()
+                .ToListAsync();
             memberships.ForEach(x => list.Add(x.ConvertToDto()));
             foreach (var loan in activeLoans)
             {
@@ -37,11 +43,12 @@ namespace LibraryApplicationProject.Controllers
         }
 
         // GET: api/Memberships/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<MembershipDTO>> GetMembership(int id)
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<MembershipDTOPost>> GetMembership(int id)
         {
             var membership = await _context.Memberships
                 .Include(p => p.Person)
+                .AsNoTracking()
                 .FirstAsync(m => m.Id == id);
 
             if (membership.Person == null) return NotFound();
@@ -54,9 +61,9 @@ namespace LibraryApplicationProject.Controllers
             var dto = membership.ConvertToDto(hasActiveLoan);
             return dto;
         }
-
-        [HttpPut]
-        public async Task<IActionResult> PutMembership(int id, MembershipDTO dto)
+        // PUT : api/Memberships/update/5
+        [HttpPut("update/{id:int}")]
+        public async Task<IActionResult> PutMembership(int id, MembershipDTOPost dto)
         {
             var membership = await _context.Memberships.Include(m => m.Person).FirstOrDefaultAsync(m => m.Id == id);
             if (membership == null) return NotFound("Membership not found");
@@ -71,8 +78,9 @@ namespace LibraryApplicationProject.Controllers
             // Find the existing person in the context
             var existingPerson = await _context.Persons.FirstOrDefaultAsync(p => membership.Person != null && p.Id == membership.Person.Id);
 
-            // Detach the existing person from the context
-            _context.Entry(existingPerson).State = EntityState.Detached;
+            if (existingPerson != null)
+                // Detach the existing person from the context
+                _context.Entry(existingPerson).State = EntityState.Detached;
 
             if (existingPerson == null)
             {
@@ -101,25 +109,21 @@ namespace LibraryApplicationProject.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
         }
 
 
-        // POST: api/Memberships
+        // POST: api/Memberships/new
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<MembershipDTO>> PostMembership(MembershipDTO membershipDto)
+        [HttpPost("new")]
+        public async Task<ActionResult<MembershipDTOPost>> PostMembership(MembershipDTOPost membershipDtoPost)
         {
-
             try
             {
-                var tup = membershipDto.ConvertFromDto();
+                var tup = membershipDtoPost.ConvertFromDto();
 
                 var person = tup.Item1;
                 var membership = tup.Item2;
@@ -139,7 +143,7 @@ namespace LibraryApplicationProject.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteMembership(int id)
         {
             var membership = await _context.Memberships

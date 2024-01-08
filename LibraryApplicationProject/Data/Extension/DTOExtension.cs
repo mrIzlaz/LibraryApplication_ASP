@@ -176,7 +176,7 @@ public static class DTOExtension
 
     #region Membership
 
-    public static (Person, Membership) ConvertFromDto(this MembershipDTO dto)
+    public static (Person, Membership) ConvertFromDto(this MembershipDTOPost dto)
     {
         var person = new Person
         {
@@ -195,16 +195,28 @@ public static class DTOExtension
         return (person, membership);
     }
 
-    public static MembershipDTO ConvertToDto(this Membership membership)
+    public static MembershipDTOPost ConvertToDto(this Membership membership)
     {
         var person = membership.Person ?? new Person();
         return membership.ConvertToDto(false);
     }
 
-    public static MembershipDTO ConvertToDto(this Membership membership, bool hasActiveLoans)
+    public static MembershipDTORead ConvertToDtoRead(this Membership membership)
     {
         var person = membership.Person ?? new Person();
-        return new MembershipDTO
+        return new MembershipDTORead
+        {
+            FirstName = person.FirstName,
+            LastName = person.LastName,
+            BirthDate = person.BirthDate,
+            CardNumber = membership.CardNumber,
+        };
+    }
+
+    public static MembershipDTOPost ConvertToDto(this Membership membership, bool hasActiveLoans)
+    {
+        var person = membership.Person ?? new Person();
+        return new MembershipDTOPost
         {
 
             MembershipId = membership.Id,

@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using LibraryApplicationProject.Data.DTO;
+﻿using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,16 +21,23 @@ namespace LibraryApplicationProject.Controllers
         public async Task<ActionResult<IEnumerable<AuthorDTORead>>> GetAuthors()
         {
             List<AuthorDTORead> authors = new List<AuthorDTORead>();
-            var list = await _context.Authors.Include(person => person.Person).Include(author => author.Isbn).ToListAsync();
+            var list = await _context.Authors
+                .Include(person => person.Person)
+                .Include(author => author.Isbn)
+                .AsNoTracking()
+                .ToListAsync();
             list.ForEach(a => authors.Add(a.ConvertToDto()));
             return authors;
         }
 
         // GET: api/Authors/5
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<AuthorDTORead>> GetAuthor(int id)
         {
-            var author = await _context.Authors.Include(p => p.Person).Include(a => a.Isbn).FirstOrDefaultAsync(a => a.Id == id);
+            var author = await _context.Authors
+                .Include(p => p.Person)
+                .Include(a => a.Isbn)
+                .FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
             {
@@ -41,9 +47,9 @@ namespace LibraryApplicationProject.Controllers
             return author.ConvertToDto();
         }
 
-        // PUT: api/Authors/personauthor5/2
+        // PUT: api/Authors/person/5/author/2
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("setpersonasauthor{personId}/{authorId}")]
+        [HttpPut("person/{personId:int}/author/{authorId:int}")]
         public async Task<IActionResult> PutAuthor(int authorId, int personId)
         {
             if (!AuthorExists(authorId))
@@ -78,9 +84,9 @@ namespace LibraryApplicationProject.Controllers
             return NoContent();
         }
 
-        // POST: api/Authors/createauthor
+        // POST: api/Authors/new
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("createauthor")]
+        [HttpPost("new")]
         public async Task<ActionResult<AuthorDTORead>> PostAuthor(AuthorDTOInsert authorDtoRead)
         {
             var tuple = authorDtoRead.ConvertFromDto();
@@ -96,7 +102,7 @@ namespace LibraryApplicationProject.Controllers
         }
 
         // DELETE: api/Authors/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteAuthor(int id)
         {
             var author = await _context.Authors
@@ -115,7 +121,11 @@ namespace LibraryApplicationProject.Controllers
                     return Conflict($"Author is also a Member with membershipId: {membership.Id}" +
                                     $", please also remove the Membership to fully remove associated data");
             }
-            _context.ISBNs.Where(i => i.Author.Contains(author)).ToList().ForEach(i => i.Author.Remove(author)); //Remove all references to Author
+            _context.ISBNs.Where(i => i.Author.Contains(author)).ToList().ForEach(i =>
+            {
+                i.Author.Remove(author);
+                _context.Entry(i).State = EntityState.Modified;
+            }); //Remove all references to Author
 
             _context.Authors.Remove(author);
             await _context.SaveChangesAsync();

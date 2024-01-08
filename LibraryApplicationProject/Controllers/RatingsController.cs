@@ -17,8 +17,8 @@ namespace LibraryApplicationProject.Controllers
             _context = context;
         }
 
-        //GET: api/Ratings/getall
-        [HttpGet("getall")]
+        //GET: api/Ratings/all
+        [HttpGet("all")]
         public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetAllRatings()
         {
             var rs = await _context.Rating
@@ -26,11 +26,12 @@ namespace LibraryApplicationProject.Controllers
                  .Include(p => p.Isbn.Author)
                  .ThenInclude(a => a.Person)
                  .Include(p => p.Membership)
+                 .AsNoTracking()
                  .ToListAsync();
             return rs.ConvertToSingleDtoList();
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<SingleRatingDTORead>> GetRating(int id)
         {
             var rs = await _context.Rating
@@ -38,6 +39,7 @@ namespace LibraryApplicationProject.Controllers
                 .Include(p => p.Isbn.Author)
                 .ThenInclude(a => a.Person)
                 .Include(p => p.Membership)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.Id == id);
             if (rs == null)
                 return NotFound();
@@ -46,38 +48,34 @@ namespace LibraryApplicationProject.Controllers
 
 
 
-        // GET: api/Ratings/searchwith/5
-        [HttpGet("searchwithmemberid{memberId}")]
-        public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetRatingByMember(int memberId)
+        // GET: api/Ratings/member/5
+        [HttpGet("member/{id:int}")]
+        public async Task<ActionResult<IEnumerable<SingleRatingDTORead>>> GetRatingByMember(int id)
         {
             List<SingleRatingDTORead> sList = new List<SingleRatingDTORead>();
             var rating = await _context.Rating
                 .Include(r => r.Isbn)
                 .Include(r => r.Membership)
-                .Where(i => i.Membership != null && i.Membership.Id == memberId).ToListAsync();
-
-            if (rating == null)
-            {
-                return NotFound();
-            }
+                .AsNoTracking()
+                .Where(i => i.Membership != null && i.Membership.Id == id).ToListAsync();
 
             rating.ForEach(r => sList.Add(r.ConvertToSingleDto()));
-
 
             return sList;
         }
 
 
-        // GET: api/Ratings/getratingforbook/52423432
-        [HttpGet("getratingforbook{isbn}")]
-        public async Task<ActionResult<AggregateRatingDTORead>> GetRatingForBook(int isbn)
+        // GET: api/Ratings/isbn/52423432
+        [HttpGet("isbn/{isbn:long}")]
+        public async Task<ActionResult<AggregateRatingDTORead>> GetRatingForBook(long isbn)
         {
             var rating = await _context.Rating
                 .Include(p => p.Isbn)
                 .Include(i => i.Isbn.Author)
                 .ThenInclude(a => a.Person)
+                .AsNoTracking()
                 .Where(i => i.Isbn.Isbn == isbn).ToListAsync();
-            bool hasRating = rating.Count != 0;
+            var hasRating = rating.Count != 0;
             var avgRating = hasRating ? Math.Round(rating.Average(p => p.ReaderRating), 2) : 0;
             var dto = new AggregateRatingDTORead()
             {
@@ -85,28 +83,22 @@ namespace LibraryApplicationProject.Controllers
                 IsbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto(avgRating),
             };
 
-            if (rating == null)
-            {
-                return NotFound();
-            }
-
             return dto;
         }
-        // POST: api/Ratings/post/51/123412421/1
+        // POST: api/Ratings/new/0-5/isbn/1234567890/member/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("postorput/{memberId}/{isbn}/{ratingVal}")]
-        public async Task<ActionResult<SingleRatingDTORead>> PostOrPutRating(int memberId, long isbn, int ratingVal)
+        [HttpPost("new/{ratingVal:int}/isbn/{isbn:long}/member/{id:int}")]
+        public async Task<ActionResult<SingleRatingDTORead>> PostOrPutRating(int id, long isbn, int ratingVal)
         {
-            var membership = await _context.Memberships.FindAsync(memberId);
+            var membership = await _context.Memberships.FindAsync(id);
             if (membership == null) return NotFound("Membership not found");
 
             var isbnObj = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
-            if (isbnObj == null) return NotFound("ISBN not found");
 
-            if (ratingVal < 0 || ratingVal > 5) return BadRequest($"Rating value not within range (0-5), was {ratingVal}");
+            if (ratingVal is < 0 or > 5) return BadRequest($"Rating value not within range (0-5), was {ratingVal}");
 
             var rating = await _context.Rating
-                .FirstOrDefaultAsync(r => r.Membership.Id == memberId && r.Isbn.Isbn == isbnObj.Isbn);
+                .FirstOrDefaultAsync(r => r.Isbn != null && r.Membership != null && r.Membership.Id == id && r.Isbn.Isbn == isbnObj.Isbn);
 
             if (rating != null)
             {
@@ -144,9 +136,8 @@ namespace LibraryApplicationProject.Controllers
             }
         }
 
-
         // DELETE: api/Ratings/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteRating(int id)
         {
             var rating = await _context.Rating.FindAsync(id);

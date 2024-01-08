@@ -1,5 +1,5 @@
 ﻿namespace LibraryApplicationProject.Data.DTO;
-public class PersonDTO
+public class PersonDTORead
 {
     public int Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
