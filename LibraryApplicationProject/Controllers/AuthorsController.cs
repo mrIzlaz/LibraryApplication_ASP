@@ -1,4 +1,4 @@
-﻿using LibraryApplicationProject.Data;
+﻿using System.Runtime.InteropServices;
 using LibraryApplicationProject.Data.DTO;
 using LibraryApplicationProject.Data.Extension;
 using Microsoft.AspNetCore.Mvc;
@@ -99,11 +99,23 @@ namespace LibraryApplicationProject.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAuthor(int id)
         {
-            var author = await _context.Authors.FindAsync(id);
-            if (author == null)
+            var author = await _context.Authors
+                .Include(a => a.Person)
+                .Include(a => a.Isbn)
+                .SingleAsync(a => a.Id == id);
+            
+            if (author.Person != null) // If person is not null. Check if it's also a member. If not, remove associated person, otherwise throw a Conflict Message.
             {
-                return NotFound();
+                var membership = await _context.Memberships
+                    .Include(m => m.Person)
+                    .FirstOrDefaultAsync(m => m.Person != null && m.Person.Id == author.Person.Id);
+                if (membership == null) //Is Author also a Member?
+                    _context.Persons.Remove(author.Person);
+                else
+                    return Conflict($"Author is also a Member with membershipId: {membership.Id}" +
+                                    $", please also remove the Membership to fully remove associated data");
             }
+            _context.ISBNs.Where(i => i.Author.Contains(author)).ToList().ForEach(i => i.Author.Remove(author)); //Remove all references to Author
 
             _context.Authors.Remove(author);
             await _context.SaveChangesAsync();

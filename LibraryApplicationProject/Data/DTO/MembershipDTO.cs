@@ -1,5 +1,4 @@
 ﻿namespace LibraryApplicationProject.Data.DTO;
-
 public class MembershipDTO : PersonDTOPost
 {
     public int MembershipId { get; set; }

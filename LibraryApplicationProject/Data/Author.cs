@@ -1,8 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Security.Cryptography;
-using LibraryApplicationProject.Data.DTO;
-
-namespace LibraryApplicationProject.Data;
+﻿namespace LibraryApplicationProject.Data;
 
 public class Author
 {

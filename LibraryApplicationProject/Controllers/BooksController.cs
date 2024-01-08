@@ -87,8 +87,7 @@ namespace LibraryApplicationProject.Controllers
             dto.AvgRating = await GetBookRating(isbn);
             return dto;
         }
-
-
+        
         // PUT: api/Books/update/1234567890
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("update/{isbn}")]

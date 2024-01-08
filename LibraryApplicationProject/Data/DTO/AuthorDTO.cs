@@ -1,6 +1,4 @@
-﻿using Microsoft.Identity.Client;
-
-namespace LibraryApplicationProject.Data.DTO;
+﻿namespace LibraryApplicationProject.Data.DTO;
 
 public class AuthorDTORead : PersonDTO
 {
