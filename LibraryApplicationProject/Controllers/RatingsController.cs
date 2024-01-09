@@ -74,13 +74,16 @@ namespace LibraryApplicationProject.Controllers
                 .Include(i => i.Isbn.Author)
                 .ThenInclude(a => a.Person)
                 .AsNoTracking()
-                .Where(i => i.Isbn.Isbn == isbn).ToListAsync();
+                .Where(i => i.Isbn != null && i.Isbn.Isbn == isbn).ToListAsync();
             var hasRating = rating.Count != 0;
             var avgRating = hasRating ? Math.Round(rating.Average(p => p.ReaderRating), 2) : 0;
             var dto = new AggregateRatingDTORead()
             {
                 NoRatings = hasRating ? rating.Count() : 0,
-                IsbnDto = _context.ISBNs.Single(i => i.Isbn == isbn).ConvertToDto(avgRating),
+                IsbnDto = _context.ISBNs
+                    .Include(i => i.Author)
+                    .ThenInclude(a => a.Person)
+                    .Single(i => i.Isbn == isbn).ConvertToDto(avgRating),
             };
 
             return dto;

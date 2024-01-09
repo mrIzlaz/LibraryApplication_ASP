@@ -181,23 +181,6 @@ namespace LibraryApplicationProject.Controllers
 
             return CreatedAtAction("GetLoan", new { id = loan.Id }, loanRead);
         }
-
-        // DELETE: api/Loans/5
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteLoan(int id)
-        {
-            var loan = await _context.Loans.FindAsync(id);
-            if (loan == null)
-            {
-                return NotFound();
-            }
-
-            _context.Loans.Remove(loan);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
         private bool LoanExists(int id)
         {
             return _context.Loans.Any(e => e.Id == id);

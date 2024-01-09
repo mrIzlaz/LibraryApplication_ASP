@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibraryApplicationProject.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    [Migration("20240102125556_PersonDateOnly")]
-    partial class PersonDateOnly
+    [Migration("20240108132123_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -108,7 +108,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("ReleaseDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 2));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -134,7 +134,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("EndDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 2));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -147,7 +147,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("StartDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 2));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_LoanId");
@@ -177,7 +177,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("RegistryDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 2));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_MembershipId");
@@ -201,7 +201,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("BirthDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 2));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<string>("FirstName")
                         .IsRequired()

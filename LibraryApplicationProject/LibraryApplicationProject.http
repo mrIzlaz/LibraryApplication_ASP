@@ -1,21 +1,204 @@
 @LibraryApplicationProject_HostAddress = https://localhost:7050
-
-GET {{LibraryApplicationProject_HostAddress}}/api/loans
-
-###
-
-GET {{LibraryApplicationProject_HostAddress}}/api/isbns
-
-###
+#################################################### AUTHOR
 GET {{LibraryApplicationProject_HostAddress}}/api/authors
 
 ###
 
-POST {{LibraryApplicationProject_HostAddress}}/api/loans/loanbooks
+GET {{LibraryApplicationProject_HostAddress}}/api/authors/5
+
+###
+
+DELETE {{LibraryApplicationProject_HostAddress}}/api/authors/17
+
+###
+
+POST {{LibraryApplicationProject_HostAddress}}/api/authors/new
 Content-Type: application/json
 
 {
-  //LoanDTOEntry
+  "firstName": "Benjamin",
+  "lastName": "Österlund",
+  "birthDate": "1989-01-09",
+  "description": "Benjamin Österlund, född 1986, är en svensk pardansare. Tillsammans med sin danspartner Angelica Källström, född 1985, har han vunnit en rad nationella och internationella tävlingar inom BRR-danserna (bugg, boogie woogie, lindy hop, rock'n roll och dubbelbugg). Paret tävlar för Uppsala Bugg & Swing Society. - Wikipedia"
 }
+
+###
+
+PUT {{LibraryApplicationProject_HostAddress}}/api/authors/person/7/author/2
+
+#################################################### BOOKS
+
+### GET ALL BOOKS
+GET {{LibraryApplicationProject_HostAddress}}/api/books/all
+
+### GET ALL BOOKS STOCKS
+GET {{LibraryApplicationProject_HostAddress}}/api/books/stock
+
+### GET INFO ON BOOKID
+
+GET {{LibraryApplicationProject_HostAddress}}/api/books/info/2
+
+### GET STOCK INFO ON ISBN
+GET {{LibraryApplicationProject_HostAddress}}/api/books/stock/1234567890123
+
+### POST NEW BOOK
+POST {{LibraryApplicationProject_HostAddress}}/api/books/new
+Content-Type: application/json
+
+{
+  "isbn": 1234567890123,
+  "title": "Vägen till DB och DBA",
+  "description": "Intressant läsning",
+  "releaseDate": "2024-01-09",
+  "authors": [
+    4
+  ],
+  "quantity": 5
+}
+
+
+### POST NEW BOOKS AND AUTHOR
+POST {{LibraryApplicationProject_HostAddress}}/api/books/new/author
+Content-Type: application/json
+
+{
+  "title": "Vägen till Sanningen om DBA",
+  "description": "Hemligheten är avslöjad",
+  "isbn": 1234567890123,
+  "releaseDate": "2024-01-09",
+  "quantity": 5,
+  "authors": [
+    {
+      "firstName": "Anders",
+      "lastName": "Olofsson",
+      "birthDate": "2024-01-09",
+      "description": "Författare av Vägen till DB och DBA."
+    }
+  ]
+}
+
+
+      
+### PUT UPDATE ISBN/BOOK INFO
+PUT {{LibraryApplicationProject_HostAddress}}/api/books/update/1234567890123
+Content-Type: application/json
+
+{
+  "isbn": 1234567890123,
+  "title": "Konsten om DBA",
+  "description": "Mycket bra skriven bok...",
+  "releaseDate": "2024-01-09",
+  "authors": [
+    2
+  ],
+  "quantity": 5
+}
+
+### ADD AUTHOR TO ISBN
+
+PATCH {{LibraryApplicationProject_HostAddress}}/api/books/update/1234567890123/author/1
+
+
+### TRIES TO DELETE ISBN IF ALL BOOKS ARE AVAILABLE / NOT LOANED.
+DELETE {{LibraryApplicationProject_HostAddress}}/api/books/isbn/1234567890123
+
+### DELETES ALL BOOKS ASSOCIATED TO ISBN AND REMOVES THEM FROM LOANS
+DELETE {{LibraryApplicationProject_HostAddress}}/api/books/remove/isbn/1234567890123
+
+#################################################### MEMBERSHIPS
+
+### POST MEMBERSHIP
+POST {{LibraryApplicationProject_HostAddress}}/api/memberships/new
+Content-Type: application/json
+
+{
+  "firstName": "Benjamin",
+  "lastName": "Österlund",
+  "birthDate": "1986-01-01",
+  "cardNumber": 78645678687,
+  "registryDate": "2024-01-09",
+  "expirationDate": "2026-01-09"
+}
+
+
+### DELET MEMBERSHIP
+DELETE {{LibraryApplicationProject_HostAddress}}/api/memberships/13
+
+### GET ALL MEMBERSHIPS
+GET {{LibraryApplicationProject_HostAddress}}/api/memberships
+
+### GET SPECIFIC MEMBERSHIP
+GET {{LibraryApplicationProject_HostAddress}}/api/memberships/1
+
+### PUT MEMBERSHIP
+PUT {{LibraryApplicationProject_HostAddress}}/api/memberships/update/1
+Content-Type: application/json
+
+{
+  "firstName": "Anders",
+  "lastName": "Johansson",
+  "birthDate": "1988-01-09",
+  "cardNumber": 123456789,
+  "registryDate": "2024-01-15",
+  "expirationDate": "2028-01-22"
+}
+  
+
+#################################################### LOANS
+
+### GET ALL LOANS
+GET {{LibraryApplicationProject_HostAddress}}/api/loans
+
+### GET SPECIFIC LOAN
+
+GET {{LibraryApplicationProject_HostAddress}}/api/loans/1
+
+### POST NEW LOAN
+
+POST {{LibraryApplicationProject_HostAddress}}/api/loans/new
+Content-Type: application/json
+
+{
+  "membershipCardNumber": 123456789,
+  "bookIds": [
+    1,8,9
+  ],
+  "returnDate": "2024-02-09"
+}
+
+### CLOSE LOAN BY LOANID
+
+PUT {{LibraryApplicationProject_HostAddress}}/api/loans/close/8
+
+### RETURN A BOOK, ADD RATING IF WANTED. IF ALL BOOKS ARE RETURNED FOR A SPECIFIC LOAN. LOAN IS CLOSED.
+
+PUT {{LibraryApplicationProject_HostAddress}}/api/loans/return/13
+Content-Type: application/json
+
+{
+  3
+}
+
+###
+
+#################################################### RATINGS
+
+### GET ALL RATINGS
+GET {{LibraryApplicationProject_HostAddress}}/api/ratings/all
+
+### GET RATING BY RATINGID
+GET {{LibraryApplicationProject_HostAddress}}/api/ratings/1
+
+### GET RATINGS FOR ISBN
+GET {{LibraryApplicationProject_HostAddress}}/api/ratings/isbn/81043791
+
+### GET RATINGS FROM MEMBERID
+GET {{LibraryApplicationProject_HostAddress}}/api/ratings/member/2
+
+### POST NEW RATING FOR ISBN BY MEMBERID
+POST {{LibraryApplicationProject_HostAddress}}/api/ratings/new/3/isbn/1234567890123/member/1
+
+### DELETE RATING 
+DELETE {{LibraryApplicationProject_HostAddress}}/api/ratings/
 
 ###

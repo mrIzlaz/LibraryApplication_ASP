@@ -105,7 +105,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("ReleaseDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 3));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -131,7 +131,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("EndDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 3));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -144,7 +144,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("StartDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 3));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_LoanId");
@@ -174,7 +174,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("RegistryDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 3));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.HasKey("Id")
                         .HasName("PrimaryKey_MembershipId");
@@ -198,7 +198,7 @@ namespace LibraryApplicationProject.Migrations
                     b.Property<DateOnly>("BirthDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("date")
-                        .HasDefaultValue(new DateOnly(2024, 1, 3));
+                        .HasDefaultValue(new DateOnly(2024, 1, 8));
 
                     b.Property<string>("FirstName")
                         .IsRequired()

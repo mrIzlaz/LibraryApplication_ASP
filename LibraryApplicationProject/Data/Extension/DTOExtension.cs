@@ -201,15 +201,20 @@ public static class DTOExtension
         return membership.ConvertToDto(false);
     }
 
-    public static MembershipDTORead ConvertToDtoRead(this Membership membership)
+    public static MembershipDTORead ConvertToDtoRead(this Membership membership, bool hasActiveLoans)
     {
         var person = membership.Person ?? new Person();
         return new MembershipDTORead
         {
+            MembershipId = membership.Id,
+            Id = person.Id,
             FirstName = person.FirstName,
             LastName = person.LastName,
             BirthDate = person.BirthDate,
             CardNumber = membership.CardNumber,
+            RegistryDate = membership.RegistryDate,
+            ExpirationDate = membership.ExpirationDate,
+            HasActiveLoan = hasActiveLoans
         };
     }
 
@@ -218,15 +223,12 @@ public static class DTOExtension
         var person = membership.Person ?? new Person();
         return new MembershipDTOPost
         {
-
-            MembershipId = membership.Id,
             FirstName = person.FirstName,
             LastName = person.LastName,
             BirthDate = person.BirthDate,
             CardNumber = membership.CardNumber,
             RegistryDate = membership.RegistryDate,
             ExpirationDate = membership.ExpirationDate,
-            HasActiveLoan = hasActiveLoans,
         };
     }
 

@@ -22,7 +22,7 @@ builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializ
 
 builder.Services.AddDbContext<LibraryDbContext>(opt =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SQLDataString");//"AzureDbString" || "SQLDataString"
+    var connectionString = builder.Configuration.GetConnectionString("AzureDbString");//"AzureDbString" || "SQLDataString"
     var connBuilder = new SqlConnectionStringBuilder(connectionString)
     {
         Password = builder.Configuration["DbPassword"]
@@ -40,15 +40,16 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 
-
+// Create some Data for the Database
+/*
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
-    db.Database.EnsureDeleted();
-    db.Database.EnsureCreated();
+    //db.Database.EnsureDeleted();
+    //db.Database.EnsureCreated();
     DataFactory fact = new();
     await fact.CreateData(db);
-}
+}*/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

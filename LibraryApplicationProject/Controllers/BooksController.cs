@@ -129,8 +129,8 @@ namespace LibraryApplicationProject.Controllers
         }
         // PUT: api/Books/update/1234567890
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("update/{isbn:int}")]
-        public async Task<IActionResult> PutBook(int isbn, BookEntryDTO dto)
+        [HttpPut("update/{isbn:long}")]
+        public async Task<IActionResult> PutBook(long isbn, BookEntryDTO dto)
         {
             if (isbn != dto.Isbn)
             {
@@ -172,8 +172,8 @@ namespace LibraryApplicationProject.Controllers
         }
 
         // PATCH: api/Books/update/1234567890/author/2
-        [HttpPatch("update/{isbn:int}/author/{authorId:int}")]
-        public async Task<IActionResult> AddAuthorToExistingISBN(int isbn, int authorId)
+        [HttpPatch("update/{isbn:long}/author/{authorId:int}")]
+        public async Task<IActionResult> AddAuthorToExistingISBN(long isbn, int authorId)
         {
 
             if (isbn <= 0 || authorId <= 0)
@@ -293,8 +293,45 @@ namespace LibraryApplicationProject.Controllers
             return NoContent();
         }
 
+        // DELETE: api/Books/isbn/5312313123
+        [HttpDelete("remove/isbn/{isbn:long}")]
+        public async Task<IActionResult> DeleteBooksAssociated(long isbn)
+        {
+            var isbnVal = await _context.ISBNs.SingleAsync(i => i.Isbn == isbn);
+
+            var books = await _context.Books
+                .Include(b => b.Isbn)
+                .Where(b => b.Isbn != null && b.Isbn.Isbn == isbn).ToListAsync();
+
+            // Check if there are books in database
+            foreach (var book in books)
+            {
+                book.Isbn = null;
+                _context.Remove(book);
+            }
+
+            var ratings = await _context.Rating.Where(r => r.Isbn == isbnVal).ToListAsync();
+
+            foreach (var rating in ratings)
+            {
+                rating.Isbn = null;
+                _context.Remove(rating);
+            }
+
+            _context.Authors.Where(a => a.Isbn.Contains(isbnVal)).ToList().ForEach(a =>
+            {
+                a.Isbn.Remove(isbnVal);
+                _context.Entry(a).State = EntityState.Modified;
+            });
+            _context.ISBNs.Remove(isbnVal);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
         private bool BookExists(int id) => _context.Books.Any(e => e.Id == id);
-        private bool BookExistsISBN(int isbn) => _context.Books.Any(e => e.Isbn != null && e.Isbn.Isbn == isbn);
+        private bool BookExistsISBN(long isbn) => _context.Books.Include(i => i.Isbn).Any(e => e.Isbn != null && e.Isbn.Isbn == isbn);
         private bool AuthorExists(int id) => _context.Authors.Any(a => a.Id == id);
 
         private async Task<(int Quantity, int Available)> GetBookStock(long isbn)

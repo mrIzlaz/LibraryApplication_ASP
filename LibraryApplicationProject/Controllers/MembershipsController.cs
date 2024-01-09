@@ -21,9 +21,9 @@ namespace LibraryApplicationProject.Controllers
 
         // GET: api/Memberships
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MembershipDTOPost>>> GetMemberships()
+        public async Task<ActionResult<IEnumerable<MembershipDTORead>>> GetMemberships()
         {
-            List<MembershipDTOPost> list = new List<MembershipDTOPost>();
+            List<MembershipDTORead> list = new List<MembershipDTORead>();
 
             var memberships = await _context.Memberships
                 .Include(person => person.Person)
@@ -33,7 +33,11 @@ namespace LibraryApplicationProject.Controllers
                 .Include(loan => loan.Membership)
                 .AsNoTracking()
                 .ToListAsync();
-            memberships.ForEach(x => list.Add(x.ConvertToDto()));
+            foreach (var membership in memberships)
+            {
+                var hasLoans = await MembershipHasActiveLoan(membership.Id);
+                list.Add(membership.ConvertToDtoRead(hasLoans));
+            };
             foreach (var loan in activeLoans)
             {
                 if (loan.Membership == null) continue;
@@ -85,6 +89,7 @@ namespace LibraryApplicationProject.Controllers
             if (existingPerson == null)
             {
                 // Create new person if person not found.
+                existingPerson = person;
                 _context.Persons.Add(person);
             }
             else
@@ -94,10 +99,12 @@ namespace LibraryApplicationProject.Controllers
                 _context.Entry(existingPerson).CurrentValues.SetValues(person);
             }
 
+            _context.Entry(existingPerson).State = EntityState.Modified;
+
             tuple.Item2.Id = membership.Id;
             membership = tuple.Item2;
             membership.Person = person;
-            _context.Entry(membership).State = EntityState.Modified;
+            _context.Memberships.Entry(membership).State = EntityState.Modified;
 
             try
             {

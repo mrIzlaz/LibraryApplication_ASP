@@ -1,6 +1,4 @@
-﻿using LibraryApplicationProject.Migrations;
-
-namespace LibraryApplicationProject.Data;
+﻿namespace LibraryApplicationProject.Data;
 
 public class Loan
 {

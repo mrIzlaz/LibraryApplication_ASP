@@ -81,7 +81,8 @@ namespace LibraryApplicationProject.Controllers
                 }
             }
 
-            return NoContent();
+            var dto = author.ConvertToDto();
+            return CreatedAtAction("GetAuthor", new { id = author.Id }, dto);
         }
 
         // POST: api/Authors/new
@@ -109,7 +110,7 @@ namespace LibraryApplicationProject.Controllers
                 .Include(a => a.Person)
                 .Include(a => a.Isbn)
                 .SingleAsync(a => a.Id == id);
-            
+
             if (author.Person != null) // If person is not null. Check if it's also a member. If not, remove associated person, otherwise throw a Conflict Message.
             {
                 var membership = await _context.Memberships
