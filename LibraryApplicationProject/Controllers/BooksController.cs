@@ -62,7 +62,10 @@ namespace LibraryApplicationProject.Controllers
             books.DistinctBy(b => b.Isbn!.Isbn).ToList().ForEach(x => getBooks.Add(x.ConvertToDtoSearch()));
             foreach (var book in getBooks)
             {
-                book.Description = book.Description[..50] + "...";
+                var length = book.Description.Length;
+                if (book.Description.Length > 50)
+                    length = 50;
+                book.Description = book.Description[..length] + "...";
                 var rating = await GetBookRating(book.Isbn);
                 book.AvgRating = rating;
                 var tuple = await GetBookStock(book.Isbn);
